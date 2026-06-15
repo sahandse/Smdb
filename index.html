@@ -646,16 +646,68 @@
 
   function buildReadyTexts(details){
     var title=details.titleFa||details.title||'این فیلم';
-    var en=details.title&&details.title!==title?' ('+details.title+')':'';
+    var en=details.title&&details.title!==title?details.title:'';
     var genre=details.genre&&details.genre!=='پیدا نشد'?details.genre:'';
     var year=details.year&&details.year!=='پیدا نشد'?details.year:'';
-    var rate=details.rating?'امتیاز IMDb: '+details.rating+'/10':'';
-    var cast=(details.cast||[]).slice(0,5).join('، ');
-    var short=title+en+(year?' محصول '+year:'')+(genre?' در ژانر '+genre:'')+' است.'+(rate?' '+rate+'.':'');
+    var runtime=details.runtime&&details.runtime!=='پیدا نشد'?details.runtime:'';
+    var director=details.director&&details.director!=='پیدا نشد'?details.director:'';
+    var country=details.country&&details.country!=='پیدا نشد'?details.country:'';
+    var ageRating=details.ageRating&&details.ageRating!=='پیدا نشد'?details.ageRating:'';
+    var type=details.type&&details.type!=='—'?details.type:'';
+    var cast5=(details.cast||[]).slice(0,5).join('، ');
+    var cast8=(details.cast||[]).slice(0,8).join('، ');
+    var desc=details.descriptionFa||details.description||'';
     var full=lastIntro||makeIntro(details);
-    var telegram='🎬 '+title+en+'\n'+(year?'📅 '+year+'\n':'')+(genre?'🎭 '+genre+'\n':'')+(rate?'⭐ '+rate+'\n':'')+(cast?'👥 '+cast+'\n':'')+'\n'+truncateText(full,450);
-    var instagram=title+en+'\n\n'+truncateText(full,360)+'\n\n#فیلم #سریال #معرفی_فیلم #IMDb';
-    var app=title+(year?' • '+year:'')+(details.rating?' • ⭐ '+details.rating:'')+'\n'+truncateText(details.descriptionFa||full,220);
+
+    var short=title+(en?' ('+en+'）':'')+(year?' | '+year:'')+(genre?' | '+genre:'')+'.'+' '+(details.rating?'⭐ '+details.rating+'/10.':'');
+
+    // ── Telegram ──────────────────────────────────────────────────────────
+    var tgLines=[];
+    tgLines.push('🎬 '+title+(en?'\n🔤 '+en:''));
+    tgLines.push('');
+    var meta2=[];
+    if(year)meta2.push('📅 '+year);
+    if(type)meta2.push('🎞 '+type);
+    if(runtime)meta2.push('⏱ '+runtime);
+    if(meta2.length)tgLines.push(meta2.join('  |  '));
+    var meta3=[];
+    if(genre)meta3.push('🎭 '+genre.split('،')[0].trim());
+    if(country)meta3.push('🌍 '+country.split('،')[0].trim());
+    if(ageRating)meta3.push('🔞 '+ageRating);
+    if(meta3.length)tgLines.push(meta3.join('  |  '));
+    if(details.rating)tgLines.push('⭐ امتیاز IMDb: '+details.rating+'/10'+(details.votes?' ('+Number(details.votes).toLocaleString()+' رأی)':''));
+    if(director)tgLines.push('🎬 کارگردان: '+director);
+    if(cast5)tgLines.push('👥 بازیگران: '+cast5);
+    tgLines.push('');
+    tgLines.push('📝 '+truncateText(desc||full,500));
+    tgLines.push('');
+    tgLines.push('━━━━━━━━━━━━━━━━━━━━');
+    if(lastTT)tgLines.push('🔗 https://www.imdb.com/title/'+lastTT+'/');
+    var telegram=tgLines.filter(function(l,i,a){return!(l===''&&a[i-1]==='')}).join('\n');
+
+    // ── Instagram ─────────────────────────────────────────────────────────
+    var igLines=[];
+    igLines.push('✨ '+title+' ✨');
+    if(en)igLines.push('( '+en+' )');
+    igLines.push('');
+    igLines.push(truncateText(desc||full,320));
+    igLines.push('');
+    igLines.push('▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬');
+    if(director)igLines.push('🎬 '+director);
+    if(cast8)igLines.push('👥 '+cast8);
+    var igMeta=[];
+    if(year)igMeta.push('📅 '+year);
+    if(genre)igMeta.push('🎭 '+genre.split('،').slice(0,2).join(' | '));
+    if(details.rating)igMeta.push('⭐ '+details.rating+'/10');
+    if(igMeta.length)igLines.push(igMeta.join('  '));
+    igLines.push('▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬');
+    igLines.push('');
+    var genreTags=(genre?genre.split(/،|,/).slice(0,3).map(function(g){return'#'+g.trim().replace(/\s+/g,'_')}).join(' '):'');
+    var baseTags='#فیلم #سریال #سینما #معرفی_فیلم #IMDb'+' '+(type==='سریال'?'#سریال_خارجی':'#فیلم_خارجی')+' #دانلود_فیلم';
+    igLines.push(genreTags+' '+baseTags);
+    var instagram=igLines.join('\n');
+
+    var app=title+(year?' • '+year:'')+(details.rating?' • ⭐ '+details.rating:'')+'\n'+truncateText(desc||full,220);
     return{short:short,full:full,telegram:telegram,instagram:instagram,app:app};
   }
   function renderReadyTexts(details){
