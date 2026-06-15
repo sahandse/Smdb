@@ -24,17 +24,19 @@ const state: AppState = {
 }
 
 // ─── DOM ──────────────────────────────────────────────────────────────────────
+// Declared as let so they can be assigned after DOMContentLoaded fires,
+// since vite-plugin-singlefile places the script in <head>.
 
-const inputImdb    = document.getElementById('input-imdb')   as HTMLInputElement
-const inputVideo   = document.getElementById('input-video')  as HTMLInputElement
-const inputApiKey  = document.getElementById('input-apikey') as HTMLInputElement
-const btnFetch     = document.getElementById('btn-fetch')    as HTMLButtonElement
-const btnReset     = document.getElementById('btn-reset')    as HTMLButtonElement
-const resultsEl    = document.getElementById('results')      as HTMLElement
-const loadingEl    = document.getElementById('loading')      as HTMLElement
-const errorEl      = document.getElementById('error-msg')    as HTMLElement
-const errorText    = document.getElementById('error-text')   as HTMLElement
-const statusEl     = document.getElementById('status-msg')   as HTMLElement
+let inputImdb:   HTMLInputElement
+let inputVideo:  HTMLInputElement
+let inputApiKey: HTMLInputElement
+let btnFetch:    HTMLButtonElement
+let btnReset:    HTMLButtonElement
+let resultsEl:   HTMLElement
+let loadingEl:   HTMLElement
+let errorEl:     HTMLElement
+let errorText:   HTMLElement
+let statusEl:    HTMLElement
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -468,10 +470,23 @@ function handleReset() {
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
-inputApiKey.value = state.apiKey
+document.addEventListener('DOMContentLoaded', () => {
+  inputImdb    = document.getElementById('input-imdb')   as HTMLInputElement
+  inputVideo   = document.getElementById('input-video')  as HTMLInputElement
+  inputApiKey  = document.getElementById('input-apikey') as HTMLInputElement
+  btnFetch     = document.getElementById('btn-fetch')    as HTMLButtonElement
+  btnReset     = document.getElementById('btn-reset')    as HTMLButtonElement
+  resultsEl    = document.getElementById('results')      as HTMLElement
+  loadingEl    = document.getElementById('loading')      as HTMLElement
+  errorEl      = document.getElementById('error-msg')    as HTMLElement
+  errorText    = document.getElementById('error-text')   as HTMLElement
+  statusEl     = document.getElementById('status-msg')   as HTMLElement
 
-btnFetch.addEventListener('click', handleFetch)
-btnReset.addEventListener('click', handleReset)
-inputImdb.addEventListener('keydown',   e => { if (e.key === 'Enter') inputVideo.focus() })
-inputVideo.addEventListener('keydown',  e => { if (e.key === 'Enter') handleFetch() })
-inputApiKey.addEventListener('keydown', e => { if (e.key === 'Enter') handleFetch() })
+  inputApiKey.value = state.apiKey
+
+  btnFetch.addEventListener('click', handleFetch)
+  btnReset.addEventListener('click', handleReset)
+  inputImdb.addEventListener('keydown',   e => { if (e.key === 'Enter') inputVideo.focus() })
+  inputVideo.addEventListener('keydown',  e => { if (e.key === 'Enter') handleFetch() })
+  inputApiKey.addEventListener('keydown', e => { if (e.key === 'Enter') handleFetch() })
+})
