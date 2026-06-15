@@ -64,6 +64,15 @@
       .logo{width:42px;height:42px;border-radius:14px}h1{font-size:16px}.sub{font-size:11px}.search{position:sticky;top:68px;z-index:19;margin:0 0 12px;border-radius:18px;box-shadow:0 12px 35px rgba(0,0,0,.35)}
       .grid{grid-template-columns:1fr}.appMovieCard{grid-template-columns:82px 1fr}.appMoviePoster{min-height:124px}.side{position:relative;top:auto;display:grid;grid-template-columns:116px 1fr;gap:12px;align-items:start}.poster{border-radius:15px}.title{margin-top:0;font-size:16px}.main{padding:10px}.card{border-radius:22px;border-left:0;border-right:0}.section{border-radius:20px;padding:12px;box-shadow:0 12px 32px rgba(0,0,0,.22)}.details{grid-template-columns:1fr}.readyGrid{grid-template-columns:1fr}.tgGrid{grid-template-columns:1fr}.proActions{grid-template-columns:repeat(2,minmax(0,1fr))}.row{grid-template-columns:1fr}.videos{grid-template-columns:1fr}.gallery{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.btn{min-height:44px}.btn.fullMobile{width:100%}.photoActions{opacity:1}.mobileAppHint{display:block;color:var(--muted);font-size:11px;margin-top:6px}.bottomBar{position:fixed;display:grid;grid-template-columns:repeat(6,1fr);gap:7px;left:10px;right:10px;bottom:10px;z-index:30;padding:8px;background:rgba(20,23,29,.94);border:1px solid var(--line);border-radius:22px;box-shadow:0 14px 45px rgba(0,0,0,.45);backdrop-filter:blur(18px)}.bottomBar a,.bottomBar button{border:0;border-radius:15px;background:#232833;color:#fff;font-size:11px;padding:10px 5px;font-weight:800}.bottomBar .primary{background:var(--brand);color:#111}}
     @media(max-width:480px){.search{flex-direction:column}.head .btn{padding:8px 10px;min-height:36px}.topActions{gap:6px}.side{grid-template-columns:100px 1fr}.gallery{grid-template-columns:1fr 1fr}.sectionHead{align-items:flex-start;flex-direction:column}.actions{justify-content:flex-start}.player{border-radius:15px}.videos,.rows{gap:8px}}
+    .srWrap{background:rgba(20,23,29,.97);border:1px solid var(--line);border-radius:18px;margin-bottom:14px;overflow:hidden;box-shadow:var(--shadow)}
+    .srHead{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--line);font-size:13px;font-weight:900}
+    .srGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line)}
+    .srItem{display:flex;gap:10px;align-items:center;background:var(--card);padding:10px 12px;cursor:pointer;transition:.15s}
+    .srItem:hover{background:#1c2029}.srPoster{width:40px;height:60px;border-radius:8px;object-fit:cover;flex-shrink:0;background:var(--soft)}
+    .srPosterEmpty{width:40px;height:60px;border-radius:8px;background:var(--soft);display:grid;place-items:center;color:var(--muted);font-size:16px;flex-shrink:0}
+    .srInfo b{display:block;font-size:12px;line-height:1.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px}.srInfo span{font-size:11px;color:var(--muted)}
+    @media(max-width:900px){.srGrid{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:480px){.srGrid{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -91,6 +100,7 @@
     <button class="btn fullMobile" id="findBtn">دریافت</button>
   </div>
   <div id="status" class="status"></div>
+  <div id="searchResults" class="srWrap hide"></div>
 
   <nav class="tabs" id="tabs">
     <a href="#titleDescSec">نام و توضیحات</a>
@@ -203,7 +213,9 @@
       <div class="section" id="proOutputsSec">
         <div class="sectionHead"><h2>خروجی‌های حرفه‌ای</h2></div>
         <div class="proActions">
-          <button class="btn" id="copyFullJsonBtn">کپی JSON کامل</button>
+          <button class="btn" id="pngIgBtn">🖼 کارت اینستاگرام PNG</button>
+          <button class="btn" id="pngTgBtn">🖼 کارت تلگرام PNG</button>
+          <button class="btn dark" id="copyFullJsonBtn">کپی JSON کامل</button>
           <button class="btn dark" id="downloadJsonBtn">دانلود JSON</button>
           <button class="btn dark" id="downloadCardHtmlBtn">دانلود HTML کارت</button>
           <button class="btn dark" id="downloadTxtBtn">دانلود خروجی TXT</button>
@@ -651,15 +663,17 @@
     var year=details.year&&details.year!=='پیدا نشد'?details.year:'';
     var runtime=details.runtime&&details.runtime!=='پیدا نشد'?details.runtime:'';
     var director=details.director&&details.director!=='پیدا نشد'?details.director:'';
+    var writer=details.writer&&details.writer!=='پیدا نشد'?details.writer:'';
     var country=details.country&&details.country!=='پیدا نشد'?details.country:'';
+    var language=details.language&&details.language!=='پیدا نشد'?details.language:'';
     var ageRating=details.ageRating&&details.ageRating!=='پیدا نشد'?details.ageRating:'';
     var type=details.type&&details.type!=='—'?details.type:'';
-    var cast5=(details.cast||[]).slice(0,5).join('، ');
-    var cast8=(details.cast||[]).slice(0,8).join('، ');
+    var cast7=(details.cast||[]).slice(0,7).join('، ');
+    var cast10=(details.cast||[]).slice(0,10).join('، ');
     var desc=details.descriptionFa||details.description||'';
     var full=lastIntro||makeIntro(details);
 
-    var short=title+(en?' ('+en+'）':'')+(year?' | '+year:'')+(genre?' | '+genre:'')+'.'+' '+(details.rating?'⭐ '+details.rating+'/10.':'');
+    var short=title+(en?' ('+en+')':'')+(year?' | '+year:'')+(genre?' | '+genre:'')+'. '+(details.rating?'⭐ '+details.rating+'/10.':'');
 
     // ── Telegram ──────────────────────────────────────────────────────────
     var tgLines=[];
@@ -672,15 +686,17 @@
     if(runtime)meta2.push('⏱ مدت: '+runtime);
     if(meta2.length)tgLines.push(meta2.join('  •  '));
     var meta3=[];
-    if(genre)meta3.push('🎭 ژانر: '+genre.split('،')[0].trim());
+    if(genre)meta3.push('🎭 ژانر: '+genre.split('،').slice(0,2).join(' | '));
     if(country)meta3.push('🌍 کشور: '+country.split('،')[0].trim());
     if(ageRating)meta3.push('🔞 رده سنی: '+ageRating);
     if(meta3.length)tgLines.push(meta3.join('  •  '));
+    if(language)tgLines.push('🌐 زبان: '+language.split('،')[0].trim());
     if(details.rating)tgLines.push('⭐ امتیاز IMDb: '+details.rating+' از ۱۰'+(details.votes?' ('+Number(details.votes).toLocaleString()+' رأی)':''));
     if(director)tgLines.push('🎬 کارگردان: '+director);
-    if(cast5)tgLines.push('👥 بازیگران: '+cast5);
+    if(writer)tgLines.push('✍ نویسنده: '+writer);
+    if(cast7)tgLines.push('👥 بازیگران: '+cast7);
     tgLines.push('');
-    tgLines.push('📝 '+truncateText(desc||full,520));
+    tgLines.push('📝 '+truncateText(desc||full,600));
     var tgMp4=lastOutputs&&lastOutputs.mp4?lastOutputs.mp4:'';
     if(tgMp4){tgLines.push('');tgLines.push('━━━━━━━━━━━━━━━━━━━━');tgLines.push('🎥 تیزر:\n'+tgMp4);}
     var telegram=tgLines.filter(function(l,i,a){return!(l===''&&(a[i-1]===''||i===0))}).join('\n');
@@ -690,21 +706,29 @@
     igLines.push('✨ '+title+' ✨');
     if(en)igLines.push('( '+en+' )');
     igLines.push('');
-    igLines.push(truncateText(desc||full,320));
+    igLines.push(truncateText(desc||full,460));
     igLines.push('');
     igLines.push('▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬');
-    if(director)igLines.push('🎬 '+director);
-    if(cast8)igLines.push('👥 '+cast8);
+    if(director)igLines.push('🎬 کارگردان: '+director);
+    if(writer)igLines.push('✍ نویسنده: '+writer);
+    if(cast10)igLines.push('👥 بازیگران: '+cast10);
     var igMeta=[];
     if(year)igMeta.push('📅 '+year);
-    if(genre)igMeta.push('🎭 '+genre.split('،').slice(0,2).join(' | '));
-    if(details.rating)igMeta.push('⭐ '+details.rating+'/10');
-    if(igMeta.length)igLines.push(igMeta.join('  '));
+    if(type)igMeta.push('🎞 '+type);
+    if(runtime)igMeta.push('⏱ '+runtime);
+    if(igMeta.length)igLines.push(igMeta.join('  •  '));
+    var igMeta2=[];
+    if(genre)igMeta2.push('🎭 '+genre.split('،').slice(0,3).join(' | '));
+    if(country)igMeta2.push('🌍 '+country.split('،')[0].trim());
+    if(ageRating)igMeta2.push('🔞 '+ageRating);
+    if(igMeta2.length)igLines.push(igMeta2.join('  •  '));
+    if(language)igLines.push('🌐 زبان: '+language.split('،')[0].trim());
+    if(details.rating)igLines.push('⭐ امتیاز IMDb: '+details.rating+' از ۱۰'+(details.votes?' | '+Number(details.votes).toLocaleString()+' رأی':''));
     igLines.push('▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬');
     igLines.push('');
-    var genreTags=(genre?genre.split(/،|,/).slice(0,3).map(function(g){return'#'+g.trim().replace(/\s+/g,'_')}).join(' '):'');
-    var baseTags='#فیلم #سریال #سینما #معرفی_فیلم #IMDb'+' '+(type==='سریال'?'#سریال_خارجی':'#فیلم_خارجی')+' #دانلود_فیلم';
-    igLines.push(genreTags+' '+baseTags);
+    var genreTags=(genre?genre.split(/،|,/).slice(0,4).map(function(g){return'#'+g.trim().replace(/\s+/g,'_')}).join(' '):'');
+    var baseTags='#فیلم #سریال #سینما #معرفی_فیلم #IMDb'+' '+(type==='سریال'?'#سریال_خارجی':'#فیلم_خارجی')+' #دانلود_فیلم #فیلم_جدید';
+    igLines.push((genreTags+' '+baseTags).trim());
     var instagram=igLines.join('\n');
 
     var app=title+(year?' • '+year:'')+(details.rating?' • ⭐ '+details.rating:'')+'\n'+truncateText(desc||full,220);
@@ -890,11 +914,49 @@
   function find(){
     var titleValue=titleInput.value.trim();
     var videoValue=videoInput.value.trim();
-    resetView(true);clearStatus();
-    var tt=getTT(titleValue),vi=getVI(videoValue);
-    if(!tt&&!vi){setStatus('کد اطلاعات tt یا کد ویدئو vi را وارد کن. نمونه: tt0133093 و vi1472252697','bad');return}
+    hideSearchResults();resetView(true);clearStatus();
+    // Auto-detect tt/vi from either field (handles full IMDb URLs too)
+    var tt=getTT(titleValue)||getTT(videoValue);
+    var vi=getVI(videoValue)||(tt?'':getVI(titleValue));
+    if(!tt&&!vi){
+      var query=titleValue||videoValue;
+      if(query.length>=2){searchByName(query);return}
+      setStatus('کد tt، کد vi، لینک IMDb یا نام فیلم را وارد کن','bad');return
+    }
     var p=tt?handleTT(tt,vi||''):handleVI(vi);
     p.catch(function(e){console.error(e);setStatus('دریافت اطلاعات کامل نشد. احتمالاً یکی از سرویس‌ها پاسخ نداده است.','bad')});
+  }
+
+  function searchByName(query){
+    loading('در حال جستجو برای «'+esc(query)+'»...');
+    Promise.all([
+      fetchJSON('https://v3-cinemeta.strem.io/catalog/movie/top/search='+encodeURIComponent(query)+'.json').catch(function(){return{}}),
+      fetchJSON('https://v3-cinemeta.strem.io/catalog/series/top/search='+encodeURIComponent(query)+'.json').catch(function(){return{}})
+    ]).then(function(res){
+      var results=[];
+      if(res[0]&&res[0].metas)results=results.concat(res[0].metas.map(function(m){return Object.assign({},m,{_t:'فیلم'})}));
+      if(res[1]&&res[1].metas)results=results.concat(res[1].metas.map(function(m){return Object.assign({},m,{_t:'سریال'})}));
+      results=results.slice(0,16);
+      if(!results.length){setStatus('نتیجه‌ای برای «'+esc(query)+'» پیدا نشد','bad');return}
+      clearStatus();showSearchResults(results,query);
+    }).catch(function(){setStatus('خطا در جستجو. اتصال را بررسی کن.','bad')});
+  }
+  function showSearchResults(results,query){
+    var el=$('searchResults');
+    el.innerHTML='<div class="srHead"><span>نتایج جستجو برای «'+esc(query||'')+'»</span><button onclick="hideSearchResults()" class="btn dark small">✕ بستن</button></div>'+
+      '<div class="srGrid">'+results.map(function(m){
+        var tt=(String(m.id||m.imdb_id||'').match(/tt\d{6,12}/i)||[])[0]||'';
+        return '<div class="srItem" onclick="selectSearchResult(\''+esc(tt)+'\')">'+
+          (m.poster?'<img class="srPoster" src="'+esc(m.poster)+'" loading="lazy" alt="">':'<div class="srPosterEmpty">🎬</div>')+
+          '<div class="srInfo"><b>'+esc(m.name||'—')+'</b><span>'+esc((m.releaseInfo||m.year||'')+' '+m._t)+'</span></div></div>';
+      }).join('')+'</div>';
+    el.classList.remove('hide');
+  }
+  function hideSearchResults(){var el=$('searchResults');if(el){el.classList.add('hide');el.innerHTML=''}}
+  function selectSearchResult(tt){
+    hideSearchResults();
+    if(!tt){toast('کد tt پیدا نشد');return}
+    titleInput.value=tt;videoInput.value='';find();
   }
 
   $('findBtn').addEventListener('click',find);
@@ -940,6 +1002,123 @@
   loadTelegramSettings();
   titleInput.addEventListener('keydown',function(e){if(e.key==='Enter')find()});
   videoInput.addEventListener('keydown',function(e){if(e.key==='Enter')find()});
+  $('pngIgBtn').addEventListener('click',function(){generatePngCard('ig')});
+  $('pngTgBtn').addEventListener('click',function(){generatePngCard('tg')});
+
+  // ── PNG Card Generator ─────────────────────────────────────────────────
+  function drawRRect(ctx,x,y,w,h,r){
+    ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+    ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+    ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+  }
+  function ctxWrap(ctx,text,x,y,maxW,lh,maxL){
+    var words=String(text||'').split(' '),line='',lines=[];
+    for(var i=0;i<words.length;i++){
+      var t=line?line+' '+words[i]:words[i];
+      if(ctx.measureText(t).width>maxW&&line){lines.push(line);line=words[i];if(lines.length>=maxL)break}
+      else line=t;
+    }
+    if(lines.length<maxL&&line)lines.push(line);
+    lines.forEach(function(l,i){ctx.fillText(l,x,y+i*lh)});
+    return lines.length;
+  }
+  function generatePngCard(variant){
+    if(!lastDetails||!lastDetails.title){toast('ابتدا یک فیلم دریافت کن');return}
+    var W=variant==='ig'?1080:1280,H=variant==='ig'?1080:640;
+    var canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;
+    var ctx=canvas.getContext('2d');ctx.direction='rtl';
+    function draw(img){
+      // Background
+      if(img){
+        ctx.save();ctx.filter='blur(28px) brightness(0.35)';
+        var s=Math.max(W/img.width,H/img.height),sw=img.width*s,sh=img.height*s;
+        ctx.drawImage(img,(W-sw)/2-30,(H-sh)/2-30,sw+60,sh+60);
+        ctx.filter='none';ctx.restore();
+      } else {
+        var g=ctx.createLinearGradient(0,0,W,H);
+        g.addColorStop(0,'#131720');g.addColorStop(1,'#07090d');
+        ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+      }
+      // Vignette
+      var vg=ctx.createRadialGradient(W/2,H/2,H*0.15,W/2,H/2,H*0.85);
+      vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,0.55)');
+      ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
+      // Poster (right side)
+      var PAD=variant==='ig'?54:46;
+      var PH=H-PAD*2,PW=Math.round(PH*2/3);
+      var PX=W-PAD-PW,PY=PAD;
+      if(img){
+        ctx.save();drawRRect(ctx,PX,PY,PW,PH,20);ctx.clip();
+        var ps=Math.max(PW/img.width,PH/img.height);
+        ctx.drawImage(img,PX+(PW-img.width*ps)/2,PY+(PH-img.height*ps)/2,img.width*ps,img.height*ps);
+        ctx.restore();
+        ctx.strokeStyle='rgba(245,197,24,.4)';ctx.lineWidth=2;drawRRect(ctx,PX,PY,PW,PH,20);ctx.stroke();
+      } else {
+        ctx.fillStyle='#1a1e26';drawRRect(ctx,PX,PY,PW,PH,20);ctx.fill();
+        ctx.fillStyle='#555';ctx.font='60px Tahoma';ctx.textAlign='center';
+        ctx.fillText('🎬',PX+PW/2,PY+PH/2+22);
+      }
+      // Text area (left side)
+      var TW=W-PW-PAD*3,TR=PAD+TW,CY=PAD;
+      ctx.textAlign='right';
+      // SMDB badge
+      ctx.fillStyle='#f5c518';drawRRect(ctx,PAD,CY,90,34,11);ctx.fill();
+      ctx.fillStyle='#111';ctx.font='bold 17px Tahoma,Arial';ctx.textAlign='left';
+      ctx.fillText('SMDB',PAD+14,CY+24);CY+=54;
+      // Persian title
+      ctx.textAlign='right';ctx.fillStyle='#fff';
+      var fs=variant==='ig'?46:40;ctx.font='bold '+fs+'px Tahoma,Arial';
+      var tl=ctxWrap(ctx,lastDetails.titleFa||lastDetails.title||'',TR,CY,TW,fs+10,2);
+      CY+=tl*(fs+10)+6;
+      // English title
+      if(lastDetails.title&&lastDetails.title!==lastDetails.titleFa){
+        ctx.fillStyle='#a1a1aa';ctx.font='22px Tahoma,Arial';
+        ctx.fillText(lastDetails.title,TR,CY);CY+=34;
+      }
+      // Separator
+      CY+=8;ctx.fillStyle='#f5c518';ctx.fillRect(PAD,CY,TW,2);CY+=16;
+      // Meta line 1: year | type | runtime
+      var m1=[];
+      if(lastDetails.year&&lastDetails.year!=='پیدا نشد')m1.push('📅 '+lastDetails.year);
+      if(lastDetails.type&&lastDetails.type!=='—')m1.push(lastDetails.type);
+      if(lastDetails.runtime&&lastDetails.runtime!=='پیدا نشد')m1.push('⏱ '+lastDetails.runtime);
+      if(m1.length){ctx.fillStyle='#a1a1aa';ctx.font='19px Tahoma,Arial';ctx.fillText(m1.join('  •  '),TR,CY);CY+=32;}
+      // Meta line 2: genre | country
+      var m2=[];
+      if(lastDetails.genre&&lastDetails.genre!=='پیدا نشد')m2.push('🎭 '+lastDetails.genre.split('،').slice(0,2).join(' | '));
+      if(lastDetails.country&&lastDetails.country!=='پیدا نشد')m2.push('🌍 '+lastDetails.country.split('،')[0]);
+      if(m2.length){ctx.fillStyle='#a1a1aa';ctx.font='18px Tahoma,Arial';ctx.fillText(m2.join('  •  '),TR,CY);CY+=30;}
+      // Rating
+      if(lastDetails.rating){
+        ctx.fillStyle='#f5c518';ctx.font='bold 30px Tahoma,Arial';
+        ctx.fillText('⭐ '+lastDetails.rating+' / 10',TR,CY);CY+=46;
+      }
+      CY+=4;
+      // Description
+      var d=lastDetails.descriptionFa||lastIntro||'';
+      if(d){ctx.fillStyle='#d4d4d8';ctx.font='17px Tahoma,Arial';
+        var dl=ctxWrap(ctx,d,TR,CY,TW,26,variant==='ig'?5:4);CY+=dl*26+10;}
+      // Cast
+      if(lastCast.length){ctx.fillStyle='#71717a';ctx.font='15px Tahoma,Arial';
+        ctx.fillText('👥 '+lastCast.slice(0,6).join('، '),TR,CY);CY+=24;}
+      // Director
+      if(lastDetails.director&&lastDetails.director!=='پیدا نشد'){
+        ctx.fillStyle='#71717a';ctx.font='15px Tahoma,Arial';
+        ctx.fillText('🎬 '+lastDetails.director,TR,CY);}
+      canvas.toBlob(function(blob){
+        var url=URL.createObjectURL(blob),a=document.createElement('a');
+        a.href=url;a.download='smdb-'+(lastTT||'card')+'-'+variant+'.png';
+        document.body.appendChild(a);a.click();a.remove();
+        setTimeout(function(){URL.revokeObjectURL(url)},1500);toast('کارت PNG آماده شد');
+      },'image/png');
+    }
+    if(lastPoster){
+      var img=new Image();img.crossOrigin='anonymous';
+      img.onload=function(){draw(img)};img.onerror=function(){draw(null)};
+      img.src=lastPoster;
+    } else draw(null);
+  }
 </script>
 </body>
 </html>
