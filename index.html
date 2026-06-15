@@ -1,463 +1,890 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fa" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#0f0f0f" />
-  <meta name="description" content="SMDB — ابزار استخراج اطلاعات فیلم از IMDb" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0d10" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700;900&display=swap" rel="stylesheet">
+  <meta name="apple-mobile-web-app-title" content="SMDB" />
   <title>SMDB — استخراج اطلاعات IMDb</title>
   <style>
-/* ─── Variables ─────────────────────────────────────────────────────────── */
-:root {
-  --gold: #f5c518;
-  --gold-dark: #d4a80f;
-  --bg: #0f0f0f;
-  --bg2: #181818;
-  --card: #1c1c1c;
-  --card2: #232323;
-  --border: #2a2a2a;
-  --text: #ffffff;
-  --text2: #b0b0b0;
-  --text3: #707070;
-  --success: #21d07a;
-  --error: #e34c4c;
-  --radius: 12px;
-  --shadow: 0 4px 24px rgba(0,0,0,.5);
-}
+    :root{
+      --bg:#0b0d10;--card:#14171d;--soft:#101318;--soft2:#0b0e13;--line:#262b35;
+      --text:#f4f4f5;--muted:#a1a1aa;--brand:#f5c518;--bad:#fb7185;--good:#4ade80;
+      --radius:20px;--shadow:0 18px 50px rgba(0,0,0,.28);
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html{scroll-behavior:smooth}
+    body{margin:0;min-height:100vh;background:radial-gradient(circle at top,#151922 0,#0b0d10 44%,#080a0d 100%);color:var(--text);font-family:Tahoma,Vazirmatn,IRANSans,Arial,sans-serif}
+    button,input,textarea{font:inherit}button{cursor:pointer}a{color:inherit;text-decoration:none}
+    .wrap{width:min(1120px,92vw);margin:auto;padding:28px 0 60px}
+    .head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+    .brand{display:flex;align-items:center;gap:11px}.logo{width:46px;height:46px;border-radius:16px;background:var(--brand);color:#111;display:grid;place-items:center;font-weight:900;font-size:11px;box-shadow:0 10px 30px rgba(245,197,24,.18)}
+    h1{font-size:18px;margin:0}.sub{margin:4px 0 0;color:var(--muted);font-size:12px}.topActions{display:flex;gap:8px;align-items:center}
+    .search{display:flex;gap:10px;background:rgba(20,23,29,.92);border:1px solid var(--line);border-radius:var(--radius);padding:10px;margin-bottom:14px;box-shadow:var(--shadow);backdrop-filter:blur(14px)}
+    .fieldBox{flex:1;min-width:0;background:var(--soft2);border:1px solid var(--line);border-radius:16px;padding:7px 10px}
+    .fieldBox label{display:block;font-size:11px;color:var(--muted);margin:0 2px 2px;font-weight:800}
+    .search input{width:100%;border:0;outline:0;background:transparent;color:var(--text);direction:ltr;text-align:left;padding:7px 2px 8px;font-size:14px}
+    .btn{border:0;border-radius:14px;background:var(--brand);color:#111;font-weight:900;padding:11px 15px;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:42px}
+    .btn.dark{background:#232833;color:#fff;border:1px solid #333a47}.btn.ghost{background:transparent;color:#fff;border:1px solid #333a47}.btn.bad{background:#3a1f28;color:#ffdce4;border:1px solid rgba(251,113,133,.35)}.btn.small{padding:7px 10px;border-radius:11px;font-size:12px;min-height:34px}.btn:disabled{opacity:.5;cursor:not-allowed}
+    .status{display:none;border:1px solid var(--line);background:var(--card);border-radius:15px;padding:10px 12px;margin-bottom:14px;font-size:12px;line-height:1.8;color:#fff}
+    .status.show{display:block}.status.good{border-color:rgba(74,222,128,.35);color:#d8ffe7}.status.bad{border-color:rgba(251,113,133,.35);color:#ffd6de}
+    .grid{display:grid;grid-template-columns:310px 1fr;gap:14px;align-items:start}.card{background:rgba(20,23,29,.94);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);backdrop-filter:blur(14px)}
+    .side{padding:14px;position:sticky;top:16px}.poster{width:100%;aspect-ratio:2/3;border:1px solid var(--line);border-radius:17px;background:var(--soft);display:grid;place-items:center;overflow:hidden;color:var(--muted);font-size:13px}.poster img{width:100%;height:100%;object-fit:cover;display:block}
+    .title{font-size:18px;line-height:1.7;margin:13px 0 5px}.meta{font-size:12px;color:var(--muted);line-height:1.9}.rating{display:inline-flex;align-items:center;gap:5px;margin-top:9px;border:1px solid #4d4014;background:#211d10;color:#ffe083;border-radius:999px;padding:5px 9px;font-size:12px}.hide{display:none!important}
+    .main{padding:14px}.player{width:100%;aspect-ratio:16/9;border:1px solid var(--line);background:#07090d;border-radius:18px;overflow:hidden;display:grid;place-items:center;color:var(--muted);font-size:13px}.player iframe,.player video{width:100%;height:100%;border:0;background:#000}
+    .section{margin-top:14px;background:rgba(16,19,24,.92);border:1px solid var(--line);border-radius:18px;padding:12px;scroll-margin-top:90px}.sectionHead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}.section h2{font-size:13px;margin:0}.actions{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+    .details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.detail{background:var(--soft2);border:1px solid var(--line);border-radius:14px;padding:10px}.detail span{display:block;color:var(--muted);font-size:11px;margin-bottom:5px}.detail b{display:block;font-size:12px;line-height:1.8;font-weight:700;color:#f4f4f5}
+    .rows{display:grid;gap:8px}.row{display:grid;grid-template-columns:170px 1fr auto;gap:8px;align-items:center;background:var(--soft2);border:1px solid var(--line);border-radius:14px;padding:8px}
+    .label{font-size:12px;color:var(--muted)}.field{direction:ltr;text-align:left;width:100%;background:#11151b;color:#e5e7eb;border:1px solid #272e3a;border-radius:11px;padding:9px;font-size:12px;outline:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.field.rtl{direction:rtl;text-align:right}
+    textarea.field{min-height:82px;resize:vertical;white-space:pre-wrap;line-height:1.8}.introBox{min-height:122px;font-size:13px;line-height:2!important}
+    .chips{display:flex;flex-wrap:wrap;gap:7px}.chip{border:1px solid #333a47;background:#171c24;color:#e5e7eb;border-radius:999px;padding:8px 11px;font-size:12px;cursor:pointer;transition:.18s;user-select:none}.chip:hover{border-color:var(--brand);color:#fff}.chip.copied{background:var(--brand);color:#111;border-color:var(--brand);font-weight:900}
+    .videos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.video{background:var(--soft2);border:1px solid var(--line);border-radius:14px;padding:10px;cursor:pointer}.video:hover{border-color:#525a68}.video b{display:block;font-size:12px;line-height:1.8}.video span{display:block;margin:3px 0 8px;color:var(--muted);font-size:11px;direction:ltr;text-align:left;word-break:break-all}.videoActions{display:flex;gap:7px;flex-wrap:wrap}.videoActions .btn{pointer-events:auto}
+    .gallery{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}.photo{position:relative;aspect-ratio:16/10;background:var(--soft2);border:1px solid var(--line);border-radius:15px;overflow:hidden}.photo img{width:100%;height:100%;object-fit:cover;display:block}.photoActions{position:absolute;left:7px;right:7px;bottom:7px;display:flex;gap:6px;opacity:0;transition:.18s}.photo:hover .photoActions,.photo:focus-within .photoActions{opacity:1}.photoActions button{border:0;border-radius:999px;background:rgba(245,197,24,.96);color:#111;font-size:11px;font-weight:900;padding:6px 8px;flex:1}
 
-/* ─── Base ──────────────────────────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
-body {
-  font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  direction: rtl;
-}
-a { color: var(--gold); text-decoration: none; }
-a:hover { text-decoration: underline; }
+    .appCardPreview{background:linear-gradient(135deg,#171c24,#0e1117);border:1px solid var(--line);border-radius:22px;padding:12px;overflow:hidden;position:relative}
+    .appMovieCard{direction:rtl;display:grid;grid-template-columns:92px 1fr;gap:12px;align-items:stretch;background:#0c0f14;border:1px solid #2a303b;border-radius:20px;padding:10px;box-shadow:0 16px 38px rgba(0,0,0,.28);min-height:154px}
+    .appMoviePoster{border-radius:16px;background:#171c24;border:1px solid #2a303b;overflow:hidden;display:grid;place-items:center;color:#8f96a3;font-size:11px;min-height:134px}.appMoviePoster img{width:100%;height:100%;object-fit:cover;display:block}
+    .appMovieInfo{min-width:0;display:flex;flex-direction:column;gap:7px}.appMovieTitle{font-size:15px;font-weight:900;line-height:1.45;color:#fff;margin:0}.appMovieTitleEn{direction:ltr;text-align:left;color:#a1a1aa;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .appBadges{display:flex;gap:5px;flex-wrap:wrap}.appBadge{background:#171c24;border:1px solid #303746;border-radius:999px;color:#e8eaee;font-size:10px;padding:4px 7px}.appBadge.gold{background:#2a230e;border-color:#554714;color:#ffe083}
+    .appMovieDesc{color:#cfd3da;font-size:11px;line-height:1.8;margin:0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.appMovieCast{color:#9aa2af;font-size:10px;line-height:1.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.appMovieActions{display:flex;gap:6px;margin-top:auto}.appMovieBtn{border:0;border-radius:12px;background:#f5c518;color:#111;font-weight:900;font-size:11px;padding:8px 10px}.appMovieBtn.dark{background:#222833;color:#fff;border:1px solid #343c49}
+    .codeBox{direction:ltr;text-align:left;width:100%;min-height:170px;background:#090b10;color:#e5e7eb;border:1px solid #272e3a;border-radius:14px;padding:12px;font-family:Consolas,Monaco,monospace;font-size:11px;line-height:1.7;resize:vertical;outline:0}
+    .empty{padding:16px;text-align:center;color:var(--muted);line-height:1.9}.spin{width:18px;height:18px;border:3px solid #333a47;border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
 
-/* ─── App wrapper ───────────────────────────────────────────────────────── */
-#app { max-width: 1100px; margin: 0 auto; padding: 1rem; }
+    .tabs{display:flex;gap:8px;overflow-x:auto;padding:8px;margin:0 0 14px;background:rgba(20,23,29,.92);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}.tabs a{white-space:nowrap;background:#232833;color:#fff;border:1px solid #333a47;border-radius:999px;padding:9px 12px;font-size:12px;font-weight:900}.tabs a.active,.tabs a:hover{background:var(--brand);color:#111;border-color:var(--brand)}
+    .readyGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.readyCard{background:var(--soft2);border:1px solid var(--line);border-radius:16px;padding:10px}.readyCard label{display:flex;justify-content:space-between;align-items:center;gap:8px;color:var(--muted);font-size:12px;font-weight:900;margin-bottom:8px}.readyCard textarea{width:100%;min-height:116px;background:#090b10;color:#e5e7eb;border:1px solid #272e3a;border-radius:13px;padding:10px;resize:vertical;line-height:1.85;font-size:12px;outline:0;direction:rtl;text-align:right}
+    .proActions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.proActions .btn{width:100%;white-space:normal;line-height:1.5}.player.ratio916{aspect-ratio:9/16;max-height:680px;margin-inline:auto;width:min(100%,390px)}.player.ratio11{aspect-ratio:1/1}.player.ratio43{aspect-ratio:4/3}
 
-/* ─── Header ────────────────────────────────────────────────────────────── */
-.app-header {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1.5rem 0 1rem;
-  border-bottom: 2px solid var(--border);
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-}
-.logo {
-  background: var(--gold);
-  color: #000;
-  font-weight: 900;
-  font-size: 1.6rem;
-  padding: .2rem .6rem;
-  border-radius: 6px;
-  letter-spacing: 1px;
-  flex-shrink: 0;
-}
-.header-text h1 { font-size: 1.2rem; font-weight: 700; color: var(--gold); }
-.header-text p  { font-size: .82rem; color: var(--text2); margin-top: .2rem; }
+    .telegramPanel{margin-top:12px;background:linear-gradient(145deg,rgba(34,158,217,.08),rgba(245,197,24,.05));border:1px solid #273241;border-radius:18px;padding:12px}.telegramPanel h3{font-size:14px}.tgGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:10px 0}.tgField label{display:block;color:var(--muted);font-size:12px;font-weight:900;margin-bottom:6px}.tgField input,.tgField select{width:100%;background:#090b10;border:1px solid #2b3442;color:#fff;border-radius:13px;padding:11px 12px;outline:0}.tgActions{display:flex;gap:8px;flex-wrap:wrap}.tgHint{margin:9px 0 0;color:var(--muted);font-size:11px;line-height:1.8}.tgMini{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px;font-weight:800;background:#111620;border:1px solid #26303d;border-radius:13px;padding:10px 11px}.tgMini input{accent-color:var(--brand)}.tgStatus{font-size:12px;color:var(--muted);font-weight:900;background:#10151f;border:1px solid #273241;border-radius:999px;padding:8px 10px}.tokenBox{background:linear-gradient(145deg,rgba(245,197,24,.07),rgba(255,255,255,.02));border-color:#3a3220}.mobileAppHint{display:none}
+    .bottomBar{display:none}
 
-/* ─── Form ───────────────────────────────────────────────────────────────── */
-.form-card {
-  background: var(--card);
-  border-radius: var(--radius);
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-}
-.form-title { font-size: 1rem; font-weight: 700; color: var(--gold); margin-bottom: 1.2rem; }
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-.form-group { display: flex; flex-direction: column; gap: .4rem; }
-.form-group.full { grid-column: 1 / -1; }
-.form-label { font-size: .8rem; color: var(--text2); font-weight: 600; }
-.form-input {
-  background: var(--bg2);
-  border: 1.5px solid var(--border);
-  border-radius: 8px;
-  color: var(--text);
-  font-family: inherit;
-  font-size: .95rem;
-  padding: .65rem .9rem;
-  direction: ltr;
-  text-align: left;
-  transition: border-color .2s;
-  width: 100%;
-}
-.form-input:focus { outline: none; border-color: var(--gold); }
-.form-input::placeholder { color: var(--text3); }
-.form-hint { font-size: .72rem; color: var(--text3); }
-.form-hint a { color: var(--gold); }
-.btn-row { display: flex; gap: .8rem; margin-top: 1.2rem; flex-wrap: wrap; }
-.btn-primary {
-  background: var(--gold);
-  color: #000;
-  border: none;
-  border-radius: 8px;
-  padding: .7rem 1.6rem;
-  font-size: .95rem;
-  font-weight: 700;
-  font-family: inherit;
-  cursor: pointer;
-  transition: background .2s, transform .1s;
-  flex: 1;
-  min-width: 140px;
-}
-.btn-primary:hover { background: var(--gold-dark); }
-.btn-primary:active { transform: scale(.97); }
-.btn-primary:disabled { opacity: .5; cursor: not-allowed; }
-.btn-secondary {
-  background: transparent;
-  color: var(--text2);
-  border: 1.5px solid var(--border);
-  border-radius: 8px;
-  padding: .7rem 1.2rem;
-  font-size: .9rem;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  transition: border-color .2s, color .2s;
-}
-.btn-secondary:hover { border-color: var(--text2); color: var(--text); }
-
-/* ─── Loading / Error / Status ──────────────────────────────────────────── */
-#loading { display: none; flex-direction: column; align-items: center; gap: .8rem; padding: 3rem; }
-.spinner {
-  width: 44px; height: 44px;
-  border: 4px solid var(--border);
-  border-top-color: var(--gold);
-  border-radius: 50%;
-  animation: spin .8s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-#status-msg { font-size: .85rem; color: var(--gold); }
-#error-msg {
-  display: none;
-  background: rgba(227,76,76,.12);
-  border: 1px solid var(--error);
-  border-radius: 8px;
-  padding: .8rem 1.1rem;
-  color: var(--error);
-  font-size: .9rem;
-  margin-bottom: 1rem;
-}
-
-/* ─── Cards ──────────────────────────────────────────────────────────────── */
-.card {
-  background: var(--card);
-  border-radius: var(--radius);
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-}
-.card-title {
-  font-size: 1.05rem; font-weight: 700; color: var(--gold);
-  margin-bottom: 1.2rem; padding-bottom: .7rem; border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; gap: .4rem;
-}
-.hint { font-size: .75rem; color: var(--text3); font-weight: 400; }
-.section-label { font-size: .78rem; font-weight: 700; color: var(--gold); margin-bottom: .35rem; }
-
-/* ─── Copy block ─────────────────────────────────────────────────────────── */
-.copy-block {
-  display: flex; align-items: flex-start; gap: .6rem;
-  background: var(--bg2); border-radius: 8px; padding: .6rem .9rem;
-}
-.cb-text {
-  flex: 1; font-size: .83rem; color: var(--text2);
-  overflow-wrap: break-word; word-break: break-word;
-  white-space: pre-wrap; line-height: 1.5; min-width: 0;
-}
-code.cb-text { font-family: 'Courier New', monospace; font-size: .75rem; color: #a8d8b0; }
-pre.cb-text {
-  font-family: 'Vazirmatn', 'Segoe UI', sans-serif;
-  direction: rtl; text-align: right; line-height: 1.8;
-}
-.copy-btn {
-  flex-shrink: 0; background: var(--card2); color: var(--gold);
-  border: 1px solid var(--border); border-radius: 6px;
-  padding: .25rem .65rem; font-size: .75rem; font-weight: 700; font-family: inherit;
-  cursor: pointer; transition: background .2s; white-space: nowrap;
-  align-self: flex-start; margin-top: .1rem;
-}
-.copy-btn:hover { background: var(--gold); color: #000; }
-.copy-btn.copied { background: var(--success); color: #000; border-color: var(--success); }
-
-/* ─── Movie Hero ─────────────────────────────────────────────────────────── */
-.movie-hero { display: flex; gap: 1.5rem; align-items: flex-start; margin-bottom: .5rem; }
-.poster-wrap { position: relative; flex-shrink: 0; width: 160px; }
-.main-poster { width: 160px; border-radius: 8px; display: block; cursor: pointer; transition: transform .2s; }
-.main-poster:hover { transform: scale(1.03); }
-.dl-overlay {
-  position: absolute; bottom: 0; left: 0; right: 0;
-  background: rgba(0,0,0,.75); color: var(--gold);
-  text-align: center; font-size: .75rem; padding: .3rem;
-  border-radius: 0 0 8px 8px; opacity: 0; transition: opacity .2s;
-  text-decoration: none !important;
-}
-.poster-wrap:hover .dl-overlay { opacity: 1; }
-.movie-meta { flex: 1; min-width: 0; }
-.rating-badge {
-  display: inline-flex; align-items: center; gap: .4rem;
-  background: var(--gold); color: #000; font-weight: 900;
-  font-size: 1.1rem; padding: .2rem .7rem; border-radius: 6px; margin-bottom: .7rem;
-}
-.stars { font-size: .85rem; }
-.movie-title { font-size: 1.5rem; font-weight: 900; margin-bottom: .6rem; line-height: 1.2; }
-.meta-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-  gap: .5rem; margin-top: .8rem;
-}
-.meta-item {
-  display: flex; flex-direction: column; gap: .25rem;
-  background: var(--bg2); border-radius: 6px; padding: .5rem .7rem;
-}
-.meta-label { font-size: .72rem; color: var(--text3); font-weight: 600; }
-.meta-item .copy-block { background: transparent; padding: 0; gap: .4rem; }
-.meta-item .cb-text { font-size: .85rem; color: var(--text); }
-
-/* ─── Plot ───────────────────────────────────────────────────────────────── */
-.plot-section { margin-top: 1.2rem; display: flex; flex-direction: column; gap: .8rem; }
-.plot-block { display: flex; flex-direction: column; gap: .35rem; }
-
-/* ─── Action buttons ─────────────────────────────────────────────────────── */
-.action-btn {
-  display: inline-flex; align-items: center; gap: .35rem;
-  background: var(--card2); color: var(--gold);
-  border: 1px solid var(--border); border-radius: 8px;
-  padding: .5rem 1rem; font-size: .85rem; font-weight: 600; font-family: inherit;
-  cursor: pointer; text-decoration: none !important;
-  transition: background .2s, border-color .2s;
-}
-.action-btn:hover { background: var(--gold); color: #000; border-color: var(--gold); }
-
-/* ─── Video ──────────────────────────────────────────────────────────────── */
-.video-wrap {
-  position: relative; padding-top: 56.25%;
-  background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 1rem;
-}
-.video-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; }
-.video-actions { display: flex; gap: .7rem; flex-wrap: wrap; }
-
-/* ─── Links ──────────────────────────────────────────────────────────────── */
-.links-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-.link-item { display: flex; flex-direction: column; gap: .35rem; }
-.link-item.full-width { grid-column: 1 / -1; }
-.link-label { font-size: .78rem; font-weight: 700; color: var(--text2); }
-.link-note  { font-size: .75rem; color: var(--text3); font-style: italic; }
-
-/* ─── Cast ───────────────────────────────────────────────────────────────── */
-.cast-grid { display: flex; flex-wrap: wrap; gap: .6rem; margin-bottom: .8rem; }
-.actor-chip {
-  display: inline-flex; align-items: center; gap: .5rem;
-  background: var(--card2); border: 1px solid var(--border);
-  border-radius: 24px; padding: .35rem .9rem .35rem .5rem;
-  font-size: .85rem; font-family: inherit; color: var(--text);
-  cursor: pointer; transition: background .2s, border-color .2s;
-}
-.actor-chip:hover { background: var(--gold); color: #000; border-color: var(--gold); }
-.actor-chip.copied { background: var(--success); color: #000; border-color: var(--success); }
-.actor-avatar {
-  width: 28px; height: 28px; background: var(--border);
-  border-radius: 50%; display: flex; align-items: center;
-  justify-content: center; font-weight: 900; font-size: .8rem; flex-shrink: 0;
-}
-.actor-chip:hover .actor-avatar { background: rgba(0,0,0,.2); }
-.mt-1 { margin-top: .8rem; }
-
-/* ─── Gallery ────────────────────────────────────────────────────────────── */
-.gallery-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: .8rem; margin-bottom: 1rem;
-}
-.gallery-item {
-  border-radius: 8px; overflow: hidden; background: var(--bg2);
-  border: 1px solid var(--border); transition: transform .2s;
-}
-.gallery-item:hover { transform: scale(1.02); }
-.gallery-img { width: 100%; display: block; cursor: pointer; aspect-ratio: 2/3; object-fit: cover; }
-.gallery-actions {
-  display: flex; align-items: center; justify-content: space-between; padding: .4rem .6rem;
-}
-.gallery-label { font-size: .72rem; color: var(--text3); }
-.dl-btn {
-  background: var(--card2); color: var(--gold); border: 1px solid var(--border);
-  border-radius: 5px; padding: .2rem .5rem; font-size: .8rem;
-  cursor: pointer; text-decoration: none !important; transition: background .2s;
-}
-.dl-btn:hover { background: var(--gold); color: #000; }
-.gallery-url-row { padding: 0 .4rem .4rem; }
-.gallery-url-row .copy-block { background: transparent; padding: .2rem 0; }
-.gallery-url-row .cb-text { font-size: .68rem; color: var(--text3); }
-.gallery-more { text-align: center; }
-
-/* ─── Social Cards ───────────────────────────────────────────────────────── */
-.social-section { margin-bottom: 2rem; }
-.social-label { font-size: .85rem; font-weight: 700; color: var(--text2); margin-bottom: .8rem; }
-.social-actions { display: flex; gap: .7rem; flex-wrap: wrap; margin-top: .8rem; }
-.card-preview { margin-bottom: .8rem; overflow: auto; }
-.card-preview-inner { border-radius: 12px; overflow: hidden; }
-.tg-card {
-  background: linear-gradient(135deg, #0d1117 0%, #0a1a2f 100%);
-  border: 1px solid #1a3a5c; border-right: 4px solid var(--gold);
-  display: flex; gap: 1rem; padding: 1.2rem; min-height: 180px;
-}
-.tg-left { flex-shrink: 0; }
-.tg-poster { width: 90px; height: 130px; object-fit: cover; border-radius: 6px; border: 2px solid var(--gold); display: block; }
-.tg-right { flex: 1; display: flex; flex-direction: column; gap: .3rem; min-width: 0; }
-.tg-rating { color: var(--gold); font-weight: 900; font-size: .9rem; }
-.tg-title  { color: #fff; font-weight: 900; font-size: 1.1rem; }
-.tg-sub    { color: var(--gold); font-size: .78rem; }
-.tg-meta   { color: #aaa; font-size: .78rem; }
-.tg-plot   { color: #999; font-size: .75rem; margin-top: .3rem; direction: rtl; line-height: 1.5; }
-.ig-card { position: relative; width: 320px; height: 320px; border-radius: 12px; overflow: hidden; background: #111; }
-.ig-bg {
-  position: absolute; inset: 0; background-size: cover; background-position: center top;
-  filter: blur(2px) brightness(.55); transform: scale(1.05);
-}
-.ig-overlay {
-  position: absolute; inset: 0;
-  background: linear-gradient(to top, rgba(0,0,0,.92) 0%, rgba(0,0,0,.3) 60%, transparent 100%);
-}
-.ig-content {
-  position: absolute; inset: 0; display: flex; flex-direction: column;
-  justify-content: flex-end; padding: 1.2rem;
-}
-.ig-rating { font-size: 1.1rem; color: var(--gold); font-weight: 900; margin-bottom: .3rem; }
-.ig-title  { font-size: 1.3rem; font-weight: 900; color: #fff; line-height: 1.2; margin-bottom: .2rem; }
-.ig-year   { font-size: .8rem; color: var(--gold); margin-bottom: .3rem; }
-.ig-dir, .ig-actors { font-size: .75rem; color: #ccc; margin-bottom: .15rem; }
-.ig-brand {
-  display: inline-block; background: var(--gold); color: #000;
-  font-weight: 900; font-size: .65rem; padding: .15rem .5rem; border-radius: 4px; margin-top: .4rem;
-}
-
-/* ─── Lightbox ───────────────────────────────────────────────────────────── */
-.lightbox {
-  position: fixed; inset: 0; background: rgba(0,0,0,.9);
-  z-index: 9999; display: flex; align-items: center; justify-content: center; cursor: pointer;
-}
-.lb-inner { position: relative; max-width: 90vw; max-height: 90vh; }
-.lb-inner img { max-width: 100%; max-height: 90vh; border-radius: 8px; display: block; }
-.lb-close {
-  position: absolute; top: -16px; right: -16px;
-  width: 36px; height: 36px; border-radius: 50%;
-  background: var(--gold); color: #000; border: none;
-  font-size: 1rem; font-weight: 900; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-}
-
-/* ─── Responsive ─────────────────────────────────────────────────────────── */
-@media (max-width: 700px) {
-  .form-grid { grid-template-columns: 1fr; }
-  .form-group.full { grid-column: 1; }
-  .movie-hero { flex-direction: column; align-items: center; }
-  .poster-wrap { width: 140px; }
-  .main-poster { width: 140px; }
-  .meta-grid { grid-template-columns: 1fr 1fr; }
-  .links-grid { grid-template-columns: 1fr; }
-  .link-item.full-width { grid-column: 1; }
-  .card-title { font-size: .95rem; }
-  .gallery-grid { grid-template-columns: repeat(2, 1fr); }
-  .ig-card { width: 280px; height: 280px; }
-}
-@media (max-width: 600px) {
-  body { background: #0a0a0a; }
-  #app { padding: .6rem; }
-  .card { padding: 1rem; border-radius: 10px; }
-  .form-card { padding: 1rem; }
-  .copy-block { flex-direction: column; }
-  .copy-btn { align-self: flex-start; }
-}
-@media (max-width: 480px) {
-  .meta-grid { grid-template-columns: 1fr; }
-  .movie-title { font-size: 1.2rem; text-align: center; }
-  .rating-badge { font-size: .95rem; }
-  .logo { font-size: 1.3rem; }
-  .header-text h1 { font-size: 1rem; }
-  .btn-row { flex-direction: column; }
-  .btn-primary, .btn-secondary { width: 100%; }
-  .tg-card { flex-direction: column; }
-  .tg-poster { width: 70px; height: 100px; }
-  .ig-card { width: 100%; height: auto; min-height: 260px; }
-}
-
-/* ─── Scrollbar ─────────────────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+    @media(min-width:1100px){.wrap{max-width:1280px}.main{min-height:720px}.section{scroll-margin-top:92px}.search{max-width:980px;margin-inline:auto}.player{max-height:560px}.tabs{position:sticky;top:12px;z-index:18}}
+    @media(max-width:900px){
+      body{background:#0b0d10}.wrap{width:100%;padding:0 12px 92px}.head{position:sticky;top:0;z-index:20;margin:0 -12px 10px;padding:12px calc(12px + env(safe-area-inset-left)) 10px calc(12px + env(safe-area-inset-right));background:rgba(11,13,16,.92);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+      .logo{width:42px;height:42px;border-radius:14px}h1{font-size:16px}.sub{font-size:11px}.search{position:sticky;top:68px;z-index:19;margin:0 0 12px;border-radius:18px;box-shadow:0 12px 35px rgba(0,0,0,.35)}
+      .grid{grid-template-columns:1fr}.appMovieCard{grid-template-columns:82px 1fr}.appMoviePoster{min-height:124px}.side{position:relative;top:auto;display:grid;grid-template-columns:116px 1fr;gap:12px;align-items:start}.poster{border-radius:15px}.title{margin-top:0;font-size:16px}.main{padding:10px}.card{border-radius:22px;border-left:0;border-right:0}.section{border-radius:20px;padding:12px;box-shadow:0 12px 32px rgba(0,0,0,.22)}.details{grid-template-columns:1fr}.readyGrid{grid-template-columns:1fr}.tgGrid{grid-template-columns:1fr}.proActions{grid-template-columns:repeat(2,minmax(0,1fr))}.row{grid-template-columns:1fr}.videos{grid-template-columns:1fr}.gallery{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.btn{min-height:44px}.btn.fullMobile{width:100%}.photoActions{opacity:1}.mobileAppHint{display:block;color:var(--muted);font-size:11px;margin-top:6px}.bottomBar{position:fixed;display:grid;grid-template-columns:repeat(6,1fr);gap:7px;left:10px;right:10px;bottom:10px;z-index:30;padding:8px;background:rgba(20,23,29,.94);border:1px solid var(--line);border-radius:22px;box-shadow:0 14px 45px rgba(0,0,0,.45);backdrop-filter:blur(18px)}.bottomBar a,.bottomBar button{border:0;border-radius:15px;background:#232833;color:#fff;font-size:11px;padding:10px 5px;font-weight:800}.bottomBar .primary{background:var(--brand);color:#111}}
+    @media(max-width:480px){.search{flex-direction:column}.head .btn{padding:8px 10px;min-height:36px}.topActions{gap:6px}.side{grid-template-columns:100px 1fr}.gallery{grid-template-columns:1fr 1fr}.sectionHead{align-items:flex-start;flex-direction:column}.actions{justify-content:flex-start}.player{border-radius:15px}.videos,.rows{gap:8px}}
   </style>
 </head>
 <body>
-  <div id="app">
-
-    <!-- Header -->
-    <header class="app-header">
+<main class="wrap">
+  <header class="head">
+    <div class="brand">
       <div class="logo">SMDB</div>
-      <div class="header-text">
-        <h1>استخراج اطلاعات فیلم از IMDb</h1>
-        <p>کد فیلم و کد ویدئو را وارد کنید — همه اطلاعات خودکار پر می‌شود</p>
-      </div>
-    </header>
+      <div><h1>SMDB</h1><p class="sub">کد tt برای اطلاعات + کد vi برای تیزر</p></div>
+    </div>
+    <div class="topActions">
+      <button class="btn dark" id="demoBtn">تست</button>
+      <button class="btn bad" id="resetBtn">ریست</button>
+    </div>
+  </header>
 
-    <!-- Input Form -->
-    <div class="form-card">
-      <div class="form-title">🔍 جستجو</div>
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label" for="input-imdb">کد IMDb فیلم</label>
-          <input class="form-input" id="input-imdb" type="text" placeholder="tt0133093" maxlength="20" />
-          <div class="form-hint">مثال: tt0133093 (ماتریکس)</div>
+  <div class="search" id="searchSec">
+    <div class="fieldBox">
+      <label>کد دریافت همه اطلاعات</label>
+      <input id="titleInput" placeholder="tt0133093" autocomplete="off" />
+    </div>
+    <div class="fieldBox">
+      <label>کد دریافت ویدئو</label>
+      <input id="videoInput" placeholder="vi1472252697" autocomplete="off" />
+    </div>
+    <button class="btn fullMobile" id="findBtn">دریافت</button>
+  </div>
+  <div id="status" class="status"></div>
+
+  <nav class="tabs" id="tabs">
+    <a href="#titleDescSec">نام و توضیحات</a>
+    <a href="#detailsSec">مشخصات</a>
+    <a href="#textsSec">متن‌ها</a>
+    <a href="#tokenSec">توکن</a>
+    <a href="#appCardSec">کارت اپ</a>
+    <a href="#proOutputsSec">خروجی‌ها</a>
+    <a href="#videosSec">تیزر</a>
+    <a href="#gallerySec">عکس‌ها</a>
+  </nav>
+
+  <section class="grid">
+    <aside class="card side">
+      <div class="poster" id="poster">کاور</div>
+      <div>
+        <h2 class="title" id="name">—</h2>
+        <div class="meta" id="meta">کد tt و در صورت نیاز کد vi را وارد کن</div>
+        <div class="rating hide" id="rating">⭐ <span></span></div>
+      </div>
+    </aside>
+
+    <section class="card main">
+      <div class="player" id="player"><div class="empty">پخش تیزر</div></div>
+
+      <div class="section" id="titleDescSec">
+        <div class="sectionHead">
+          <h2>نام و توضیحات فیلم / سریال</h2>
+          <button class="btn dark small" id="copyTitleDescBtn">کپی نام و توضیحات</button>
         </div>
-        <div class="form-group">
-          <label class="form-label" for="input-video">کد ویدئو IMDb</label>
-          <input class="form-input" id="input-video" type="text" placeholder="vi1472252697" maxlength="30" />
-          <div class="form-hint">مثال: vi1472252697 (برای تیزر)</div>
+        <div class="rows" id="titleDescRows"></div>
+      </div>
+
+      <div class="section" id="detailsSec">
+        <div class="sectionHead"><h2>مشخصات فیلم / سریال</h2><button class="btn dark small" id="copyDetailsBtn">کپی مشخصات</button></div>
+        <div class="details" id="details"><div class="empty">—</div></div>
+      </div>
+
+      <div class="section" id="introSec">
+        <div class="sectionHead"><h2>متن معرفی فارسی</h2><button class="btn dark small" id="copyIntroBtn">کپی متن</button></div>
+        <textarea class="field rtl introBox" id="introText" readonly>—</textarea>
+      </div>
+
+      <div class="section" id="textsSec">
+        <div class="sectionHead">
+          <h2>متن‌های آماده فارسی</h2>
+          <button class="btn dark small" id="copyReadyTextsBtn">کپی همه متن‌ها</button>
         </div>
-        <div class="form-group full">
-          <label class="form-label" for="input-apikey">کلید API OMDB</label>
-          <input class="form-input" id="input-apikey" type="text" placeholder="your_api_key_here" />
-          <div class="form-hint">
-            کلید رایگان از <a href="https://www.omdbapi.com/apikey.aspx" target="_blank">omdbapi.com</a> دریافت کنید (۱۰۰۰ درخواست/روز رایگان)
+        <div class="readyGrid">
+          <div class="readyCard"><label>خلاصه کوتاه <button class="btn small" data-copy-ready="short">کپی</button></label><textarea id="readyShort" readonly>—</textarea></div>
+          <div class="readyCard"><label>معرفی کامل <button class="btn small" data-copy-ready="full">کپی</button></label><textarea id="readyFull" readonly>—</textarea></div>
+          <div class="readyCard"><label>متن تلگرام <button class="btn small" data-copy-ready="telegram">کپی</button></label><textarea id="readyTelegram" readonly>—</textarea></div>
+          <div class="readyCard"><label>متن اینستاگرام <button class="btn small" data-copy-ready="instagram">کپی</button></label><textarea id="readyInstagram" readonly>—</textarea></div>
+          <div class="readyCard"><label>متن اپلیکیشن <button class="btn small" data-copy-ready="app">کپی</button></label><textarea id="readyApp" readonly>—</textarea></div>
+        </div>
+
+        <div class="telegramPanel" id="telegramSendSec">
+          <div class="sectionHead">
+            <h3>انتشار تلگرام</h3>
+            <span class="tgStatus" id="tgStatus">تنظیمات توکن بررسی نشده</span>
+          </div>
+          <div class="tgActions">
+            <button class="btn small" id="tgSendAllBtn">انتشار کامل</button>
+            <button class="btn small" id="tgSendPhotoBtn">عکس + توضیحات</button>
+            <button class="btn small" id="tgSendVideoBtn">تیزر / لینک تیزر</button>
+            <button class="btn dark small" id="tgOpenShareBtn">Share تلگرام</button>
+            <a class="btn dark small" href="#tokenSec">تنظیمات توکن</a>
+          </div>
+          <p class="tgHint">تنظیمات توکن در بخش جداگانه «توکن و تنظیمات تلگرام» قرار دارد.</p>
+        </div>
+      </div>
+
+      <div class="section tokenBox" id="tokenSec">
+        <div class="sectionHead">
+          <h2>توکن و تنظیمات تلگرام</h2>
+          <div class="actions">
+            <button class="btn dark small" id="tgTestTokenBtn">تست ربات</button>
+            <button class="btn bad small" id="tgClearSettingsBtn">پاک کردن تنظیمات</button>
           </div>
         </div>
+        <div class="tgGrid">
+          <div class="tgField"><label>Bot Token</label><input id="tgBotToken" type="password" placeholder="123456:ABC..." autocomplete="off"></div>
+          <div class="tgField"><label>Chat ID یا آیدی کانال</label><input id="tgChatId" placeholder="@channel یا -1001234567890" autocomplete="off"></div>
+          <div class="tgField"><label>روش ارسال</label><select id="tgSendMode"><option value="direct">ارسال مستقیم از مرورگر</option><option value="server">ارسال امن‌تر با telegram-send.php</option></select></div>
+          <div class="tgField"><label>آدرس PHP Sender</label><input id="tgEndpoint" placeholder="telegram-send.php" value="telegram-send.php" autocomplete="off"></div>
+        </div>
+        <div class="tgActions">
+          <label class="tgMini"><input id="tgSaveSettings" type="checkbox" checked> ذخیره تنظیمات در مرورگر</label>
+          <label class="tgMini"><input id="tgSendPhotoFirst" type="checkbox" checked> اول عکس و توضیحات ارسال شود</label>
+          <label class="tgMini"><input id="tgSendTrailerAfter" type="checkbox" checked> بعد از عکس، تیزر ارسال شود</label>
+          <label class="tgMini"><input id="tgFallbackEmbed" type="checkbox" checked> اگر MP4 نبود، لینک Embed ارسال شود</label>
+        </div>
+        <p class="tgHint">برای استفاده در سایت عمومی، روش امن‌تر این است که ZIP را روی هاست PHPدار بگذاری و Bot Token را داخل فایل <b>telegram-send.php</b> تنظیم کنی.</p>
+        <p class="mobileAppHint">📱 این صفحه برای موبایل بهینه شده؛ بخش‌های اصلی از نوار پایین سریع باز می‌شوند.</p>
       </div>
-      <div class="btn-row">
-        <button class="btn-primary" id="btn-fetch">🔍 دریافت اطلاعات</button>
-        <button class="btn-secondary" id="btn-reset">↺ ریست</button>
+
+      <div class="section" id="appCardSec">
+        <div class="sectionHead">
+          <h2>کارت معرفی فیلم برای اپلیکیشن</h2>
+          <div class="actions">
+            <button class="btn dark small" id="copyAppCardHtmlBtn">کپی HTML کارت</button>
+            <button class="btn dark small" id="copyAppCardJsonBtn">کپی JSON</button>
+          </div>
+        </div>
+        <div class="appCardPreview" id="appCardPreview"><div class="empty">بعد از دریافت اطلاعات، کارت اپلیکیشن ساخته می‌شود</div></div>
+        <div style="height:10px"></div>
+        <textarea class="codeBox" id="appCardCode" readonly onclick="this.select()">—</textarea>
       </div>
-    </div>
 
-    <!-- Error -->
-    <div id="error-msg">
-      <span>⚠️ </span><span id="error-text"></span>
-    </div>
+      <div class="section" id="proOutputsSec">
+        <div class="sectionHead"><h2>خروجی‌های حرفه‌ای</h2></div>
+        <div class="proActions">
+          <button class="btn" id="copyFullJsonBtn">کپی JSON کامل</button>
+          <button class="btn dark" id="downloadJsonBtn">دانلود JSON</button>
+          <button class="btn dark" id="downloadCardHtmlBtn">دانلود HTML کارت</button>
+          <button class="btn dark" id="downloadTxtBtn">دانلود خروجی TXT</button>
+          <button class="btn ghost" id="copyApiItemBtn">کپی آیتم API اپ</button>
+          <button class="btn ghost" id="downloadApiItemBtn">دانلود آیتم API</button>
+        </div>
+      </div>
 
-    <!-- Loading -->
-    <div id="loading">
-      <div class="spinner"></div>
-      <div id="status-msg" style="display:none"></div>
-    </div>
+      <div class="section" id="outputsSec">
+        <div class="sectionHead"><h2>خروجی‌ها</h2><button class="btn dark small" id="copyAllBtn">کپی همه</button></div>
+        <div class="rows" id="links"></div>
+      </div>
 
-    <!-- Results -->
-    <div id="results" style="display:none"></div>
+      <div class="section" id="castSec">
+        <div class="sectionHead"><h2>بازیگران</h2><button class="btn dark small" id="copyCastBtn">کپی بازیگران</button></div>
+        <div class="chips" id="cast"><span class="chip">—</span></div>
+      </div>
 
-  </div>
+      <div class="section" id="videosSec">
+        <div class="sectionHead"><h2>تیزر / ویدئو</h2><div class="actions"><button class="btn dark small" data-ratio="16:9">16:9</button><button class="btn dark small" data-ratio="9:16">9:16</button><button class="btn dark small" data-ratio="1:1">1:1</button><button class="btn dark small" id="openTrailerBtn">نمایش کامل</button></div></div>
+        <div class="videos" id="videos"><div class="empty">—</div></div>
+      </div>
 
-  <script type="module" src="/src/main.ts"></script>
+      <div class="section" id="gallerySec">
+        <div class="sectionHead"><h2>گالری تصاویر</h2><div class="actions"><button class="btn dark small" id="copyGalleryBtn">کپی لینک عکس‌ها</button></div></div>
+        <div class="gallery" id="gallery"><div class="empty">—</div></div>
+      </div>
+    </section>
+  </section>
+</main>
+
+<nav class="bottomBar" aria-label="ناوبری موبایل">
+  <button class="primary" onclick="document.getElementById('titleInput').focus()">جستجو</button>
+  <a href="#titleDescSec">نام</a>
+  <a href="#detailsSec">مشخصات</a>
+  <a href="#tokenSec">توکن</a>
+  <a href="#videosSec">تیزر</a>
+  <a href="#gallerySec">عکس‌ها</a>
+</nav>
+
+<script>
+  var $ = function(id){ return document.getElementById(id); };
+  var titleInput=$('titleInput'), videoInput=$('videoInput'), statusBox=$('status'), posterBox=$('poster'), nameBox=$('name'), metaBox=$('meta'), ratingBox=$('rating'), playerBox=$('player'), linksBox=$('links'), castBox=$('cast'), videosBox=$('videos'), galleryBox=$('gallery'), detailsBox=$('details'), introBox=$('introText'), titleDescRows=$('titleDescRows'), appCardPreview=$('appCardPreview'), appCardCode=$('appCardCode'), readyShort=$('readyShort'), readyFull=$('readyFull'), readyTelegram=$('readyTelegram'), readyInstagram=$('readyInstagram'), readyApp=$('readyApp');
+  var tgBotToken=$('tgBotToken'), tgChatId=$('tgChatId'), tgSaveSettings=$('tgSaveSettings'), tgSendMode=$('tgSendMode'), tgEndpoint=$('tgEndpoint'), tgSendPhotoFirst=$('tgSendPhotoFirst'), tgSendTrailerAfter=$('tgSendTrailerAfter'), tgFallbackEmbed=$('tgFallbackEmbed'), tgStatus=$('tgStatus');
+  var lastCast=[], lastOutputs={}, lastGallery=[], lastDetails={}, lastIntro='', lastTitleDesc={}, lastPoster='', lastTT='', lastVI='', lastAppCardHTML='', lastAppCardJSON={}, lastReadyTexts={}, lastFullJSON={};
+
+  var proxies = [
+    function(url){ return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url); },
+    function(url){ return 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url); },
+    function(url){ return 'https://corsproxy.io/?' + encodeURIComponent(url); },
+    function(url){ return 'https://thingproxy.freeboard.io/fetch/' + url; }
+  ];
+
+  function esc(v){return String(v == null ? '' : v).replace(/[&<>'"]/g,function(s){return({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[s]);})}
+  function jsEsc(v){return String(v == null ? '' : v).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n').replace(/\r/g,'')}
+  function clean(v){return String(v||'').trim()}
+  function getTT(v){var m=(clean(v).match(/tt\d{6,12}/i)||[]);return m[0]?m[0].toLowerCase():null}
+  function getVI(v){var m=(clean(v).match(/vi\d{5,16}/i)||[]);return m[0]?m[0].toLowerCase():null}
+  function uniq(arr,key){var seen=new Set();return arr.filter(function(x){var k=key(x);if(!k||seen.has(k))return false;seen.add(k);return true})}
+  function first(){var vals=Array.prototype.slice.call(arguments).reduce(function(a,b){return a.concat(b);},[]);return vals.find(function(v){return Array.isArray(v)?v.length:clean(v)})||''}
+
+  function setStatus(text,type){statusBox.className='status show '+(type||'good');statusBox.innerHTML=text}
+  function clearStatus(){statusBox.className='status';statusBox.innerHTML=''}
+  function loading(text){setStatus('<span style="display:flex;align-items:center;gap:9px"><span class="spin"></span>'+(text||'در حال دریافت اطلاعات...')+'</span>')}
+  function toast(t){var el=document.createElement('div');el.textContent=t;el.style.cssText='position:fixed;left:50%;bottom:86px;transform:translateX(-50%);background:#f5c518;color:#111;padding:9px 14px;border-radius:999px;font-weight:900;z-index:999;font-size:12px;box-shadow:0 12px 30px rgba(0,0,0,.28)';document.body.appendChild(el);setTimeout(function(){el.remove()},1300)}
+  function copyText(v){v=String(v||'');if(!v||v==='—')return;if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(v).then(function(){toast('کپی شد')}).catch(function(){prompt('کپی دستی:',v)})}else{prompt('کپی دستی:',v)}}
+  function copyChip(el,v){copyText(v);if(!el)return;var old=el.textContent;el.classList.add('copied');el.textContent='کپی شد';setTimeout(function(){el.classList.remove('copied');el.textContent=old},850)}
+  function copyFromInput(id){var el=$(id);if(!el)return;el.focus();el.select();copyText(el.value)}
+  function downloadAsset(url,filename){
+    filename=filename||'download';
+    if(!url||/^پیدا نشد|^فعلاً/.test(url)){toast('لینک دانلود پیدا نشد');return}
+    fetch(url,{mode:'cors'}).then(function(res){
+      if(!res.ok)throw new Error('blocked');
+      return res.blob();
+    }).then(function(blob){
+      var objectUrl=URL.createObjectURL(blob);
+      var a=document.createElement('a');a.href=objectUrl;a.download=filename;document.body.appendChild(a);a.click();a.remove();
+      setTimeout(function(){URL.revokeObjectURL(objectUrl)},1500);toast('دانلود شروع شد');
+    }).catch(function(){
+      var a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener';a.download=filename;document.body.appendChild(a);a.click();a.remove();toast('اگر دانلود نشد، لینک باز شد');
+    });
+  }
+
+  function updateTgStatus(){
+    if(!tgStatus)return;
+    var hasChat=!!tgChatId.value.trim();
+    var mode=tgSendMode?tgSendMode.value:'direct';
+    var hasToken=!!tgBotToken.value.trim();
+    if(mode==='server')tgStatus.textContent=hasChat?'حالت PHP فعال است':'Chat ID وارد نشده';
+    else tgStatus.textContent=(hasToken&&hasChat)?'توکن آماده است':'توکن/Chat ID ناقص است';
+  }
+  function loadTelegramSettings(){
+    try{
+      var s=JSON.parse(localStorage.getItem('smdb_tg_settings')||'{}');
+      if(s.token)tgBotToken.value=s.token;if(s.chatId)tgChatId.value=s.chatId;
+      if(s.mode)tgSendMode.value=s.mode;if(s.endpoint)tgEndpoint.value=s.endpoint;
+      if(typeof s.photoFirst==='boolean')tgSendPhotoFirst.checked=s.photoFirst;
+      if(typeof s.trailerAfter==='boolean')tgSendTrailerAfter.checked=s.trailerAfter;
+      if(typeof s.fallbackEmbed==='boolean')tgFallbackEmbed.checked=s.fallbackEmbed;
+      if(typeof s.save==='boolean')tgSaveSettings.checked=s.save;
+    }catch(e){}
+    updateTgStatus();
+  }
+  function saveTelegramSettings(){
+    if(!tgSaveSettings||!tgSaveSettings.checked){localStorage.removeItem('smdb_tg_settings');updateTgStatus();return}
+    localStorage.setItem('smdb_tg_settings',JSON.stringify({
+      token:tgBotToken.value.trim(),chatId:tgChatId.value.trim(),mode:tgSendMode.value,endpoint:tgEndpoint.value.trim()||'telegram-send.php',
+      photoFirst:tgSendPhotoFirst.checked,trailerAfter:tgSendTrailerAfter.checked,fallbackEmbed:tgFallbackEmbed.checked,save:tgSaveSettings.checked
+    }));
+    updateTgStatus();
+  }
+  function clearTelegramSettings(){
+    localStorage.removeItem('smdb_tg_settings');tgBotToken.value='';tgChatId.value='';tgSendMode.value='direct';tgEndpoint.value='telegram-send.php';tgSaveSettings.checked=true;tgSendPhotoFirst.checked=true;tgSendTrailerAfter.checked=true;tgFallbackEmbed.checked=true;updateTgStatus();toast('تنظیمات تلگرام پاک شد');
+  }
+  function telegramCaption(){return (lastReadyTexts.telegram||readyTelegram.value||lastIntro||'').trim()}
+  function telegramPhotoUrl(){return lastPoster||lastGallery[0]||lastAppCardJSON.poster||''}
+  function telegramVideoUrl(){return lastOutputs.mp4||lastAppCardJSON.trailerMp4||''}
+  function telegramEmbedUrl(){return lastOutputs.officialEmbed||lastAppCardJSON.trailerEmbed||(lastVI?'https://www.imdb.com/video/embed/'+lastVI+'/':'')}
+  function telegramShareUrl(){
+    var url=telegramEmbedUrl()||lastOutputs.titlePage||(lastTT?'https://www.imdb.com/title/'+lastTT+'/':'https://t.me/share/url');
+    var text=truncateText(telegramCaption(),1800);
+    window.open('https://t.me/share/url?url='+encodeURIComponent(url)+'&text='+encodeURIComponent(text),'_blank','noopener');
+  }
+  function tgCheck(){
+    var mode=tgSendMode.value,token=tgBotToken.value.trim(),chatId=tgChatId.value.trim();
+    if(!chatId){toast('Chat ID را در بخش توکن وارد کن');location.hash='tokenSec';tgChatId.focus();return null}
+    if(mode!=='server'&&!token){toast('Bot Token را در بخش توکن وارد کن');location.hash='tokenSec';tgBotToken.focus();return null}
+    saveTelegramSettings();return{token:token,chatId:chatId,mode:mode,endpoint:tgEndpoint.value.trim()||'telegram-send.php'};
+  }
+  function telegramApi(method,fields){
+    var cfg=tgCheck();if(!cfg)return Promise.resolve(null);
+    var form=new FormData();
+    Object.keys(fields).forEach(function(k){if(fields[k]!==undefined&&fields[k]!==null&&String(fields[k])!=='')form.append(k,fields[k])});
+    var url='https://api.telegram.org/bot'+cfg.token+'/'+method;
+    if(cfg.mode==='server'){
+      url=cfg.endpoint;
+      form.append('type',method==='sendPhoto'?'photo':method==='sendVideo'?'video':'message');
+      form.append('chat_id',cfg.chatId);
+    }
+    return fetch(url,{method:'POST',body:form}).then(function(res){
+      return res.json().catch(function(){return{ok:false,description:'پاسخ نامعتبر'}}).then(function(data){
+        if(!res.ok||!data.ok)throw new Error(data.description||'ارسال ناموفق بود');
+        updateTgStatus();return data;
+      });
+    });
+  }
+  function testTelegramBot(){
+    var cfg=tgCheck();if(!cfg)return;
+    if(cfg.mode==='server'){toast('حالت PHP انتخاب شده؛ با انتشار تست کن');updateTgStatus();return}
+    fetch('https://api.telegram.org/bot'+cfg.token+'/getMe').then(function(res){return res.json()}).then(function(data){
+      if(!data.ok)throw new Error(data.description||'توکن نامعتبر است');
+      toast('ربات فعال است: @'+(data.result.username||'bot'));updateTgStatus();
+    }).catch(function(e){setStatus('خطا در تست ربات: '+esc(e.message),'bad')});
+  }
+  function sendTelegramPhoto(){
+    var photo=telegramPhotoUrl(),caption=truncateText(telegramCaption(),1000);
+    var p=photo?telegramApi('sendPhoto',{chat_id:tgChatId.value.trim(),photo:photo,caption:caption}):telegramApi('sendMessage',{chat_id:tgChatId.value.trim(),text:caption});
+    p&&p.then(function(){toast(photo?'عکس و توضیحات ارسال شد':'متن ارسال شد؛ عکس پیدا نشد')}).catch(function(e){setStatus('خطا در ارسال تلگرام: '+esc(e.message),'bad')});
+  }
+  function sendTelegramVideo(){
+    var video=telegramVideoUrl(),embed=telegramEmbedUrl(),caption=truncateText(telegramCaption(),900);
+    var p;
+    if(video){p=telegramApi('sendVideo',{chat_id:tgChatId.value.trim(),video:video,caption:caption});p&&p.then(function(){toast('ویدئو ارسال شد')}).catch(function(e){setStatus('خطا: '+esc(e.message),'bad')});return}
+    if(embed&&tgFallbackEmbed.checked){p=telegramApi('sendMessage',{chat_id:tgChatId.value.trim(),text:'▶️ تیزر:\n'+embed});p&&p.then(function(){toast('MP4 نبود؛ لینک تیزر ارسال شد')}).catch(function(e){setStatus('خطا: '+esc(e.message),'bad')});return}
+    p=telegramApi('sendMessage',{chat_id:tgChatId.value.trim(),text:caption});p&&p.then(function(){toast('لینک تیزر پیدا نشد؛ متن ارسال شد')}).catch(function(e){setStatus('خطا: '+esc(e.message),'bad')});
+  }
+  function sendTelegramAll(){
+    if(tgSendPhotoFirst.checked){
+      sendTelegramPhoto();
+      if(tgSendTrailerAfter.checked)setTimeout(sendTelegramVideo,700);
+    }else if(tgSendTrailerAfter.checked){
+      sendTelegramVideo();
+    }else{
+      sendTelegramPhoto();
+    }
+  }
+
+  function resetView(keepInputs){
+    lastCast=[];lastOutputs={};lastGallery=[];lastDetails={};lastIntro='';lastTitleDesc={};lastPoster='';lastTT='';lastVI='';lastAppCardHTML='';lastAppCardJSON={};lastReadyTexts={};lastFullJSON={};
+    posterBox.innerHTML='کاور';nameBox.textContent='—';metaBox.textContent='کد IMDb را وارد کن';ratingBox.classList.add('hide');ratingBox.querySelector('span').textContent='';
+    playerBox.innerHTML='<div class="empty">پخش تیزر</div>';linksBox.innerHTML='';castBox.innerHTML='<span class="chip">—</span>';videosBox.innerHTML='<div class="empty">—</div>';galleryBox.innerHTML='<div class="empty">—</div>';detailsBox.innerHTML='<div class="empty">—</div>';introBox.value='—';titleDescRows.innerHTML='';appCardPreview.innerHTML='<div class="empty">بعد از دریافت اطلاعات، کارت اپلیکیشن ساخته می‌شود</div>';appCardCode.value='—';readyShort.value='—';readyFull.value='—';readyTelegram.value='—';readyInstagram.value='—';readyApp.value='—';
+    if(!keepInputs){titleInput.value='';videoInput.value='';clearStatus();titleInput.focus()}
+  }
+
+  function makeRow(label,value,multiline,rtl){
+    var id='f_'+Math.random().toString(36).slice(2,9);
+    var val=esc(value||'');
+    var cls='field'+(rtl?' rtl':'');
+    var field=multiline?'<textarea class="'+cls+'" id="'+id+'" readonly onclick="this.select()">'+val+'</textarea>':'<input class="'+cls+'" id="'+id+'" readonly value="'+val+'" onclick="this.select()">';
+    return '<div class="row"><div class="label">'+esc(label)+'</div>'+field+'<button class="btn small" onclick="copyFromInput(\''+id+'\')">کپی</button></div>';
+  }
+
+  function outputRows(o){
+    lastOutputs=Object.assign({},o,{intro:lastIntro,details:lastDetails,titleDesc:lastTitleDesc});
+    linksBox.innerHTML=''
+      +makeRow('لینک صفحه ویدئو IMDb',o.imdbVideoPage||'پیدا نشد')
+      +makeRow('لینک رسمی Embed',o.officialEmbed||'پیدا نشد')
+      +makeRow('Embed جایگزین IMDb',o.altEmbed||'پیدا نشد')
+      +makeRow('آدرس تیزر به صورت MP4',o.mp4||'فعلاً پیدا نشد')
+      +makeRow('کد iframe برای گذاشتن در سایت',o.iframeCode||'پیدا نشد',true)
+      +makeRow('شورت‌کد iframe برای سایت',o.shortcode||'پیدا نشد',true)
+      +makeRow('لینک صفحه فیلم/سریال IMDb',o.titlePage||'پیدا نشد')
+      +makeRow('گالری ویدئو IMDb',o.videoGallery||'پیدا نشد')
+      +makeRow('بازیگران متنی',o.castText||'پیدا نشد',true,true);
+  }
+
+  function renderTitleDesc(details){
+    lastTitleDesc={
+      englishTitle:details.title||'پیدا نشد',
+      persianTitle:details.titleFa||details.title||'پیدا نشد',
+      englishDescription:details.description||'پیدا نشد',
+      persianDescription:details.descriptionFa||makeIntro(details)||'پیدا نشد'
+    };
+    titleDescRows.innerHTML=''
+      +makeRow('نام انگلیسی',lastTitleDesc.englishTitle)
+      +makeRow('نام فارسی',lastTitleDesc.persianTitle,false,true)
+      +makeRow('توضیحات انگلیسی',lastTitleDesc.englishDescription,true)
+      +makeRow('توضیحات فارسی',lastTitleDesc.persianDescription,true,true);
+  }
+
+  function buildOutputs(opts){
+    var tt=opts.tt||'',vi=opts.vi||'',mp4=opts.mp4||'',castText=opts.castText||'';
+    var titlePage=tt?'https://www.imdb.com/title/'+tt+'/':'';
+    var videoGallery=tt?'https://www.imdb.com/title/'+tt+'/videogallery/':'';
+    var imdbVideoPage=vi?'https://www.imdb.com/video/'+vi+'/':'';
+    var officialEmbed=vi?'https://www.imdb.com/video/embed/'+vi+'/':'';
+    var altEmbed=vi?'https://www.imdb.com/video/imdb/'+vi+'/imdb/embed?autoplay=false&width=854':'';
+    var iframeCode=officialEmbed?'<iframe src="'+officialEmbed+'" width="854" height="480" allowfullscreen="true" frameborder="0"></iframe>':'';
+    var shortcode=officialEmbed?'[iframe src="'+officialEmbed+'" width="854" height="480"]':'';
+    return{imdbVideoPage:imdbVideoPage,officialEmbed:officialEmbed,altEmbed:altEmbed,mp4:mp4,iframeCode:iframeCode,shortcode:shortcode,titlePage:titlePage,videoGallery:videoGallery,castText:castText};
+  }
+
+  function fetchJSON(url){
+    return fetch(url,{headers:{Accept:'application/json'}}).then(function(res){
+      if(!res.ok)throw new Error('HTTP '+res.status);
+      return res.json();
+    });
+  }
+  function fetchTextAny(url){
+    var tries=[url].concat(proxies.map(function(p){return p(url)}));
+    var lastErr;
+    function tryNext(i){
+      if(i>=tries.length)return Promise.reject(lastErr||new Error('fetch failed'));
+      return fetch(tries[i],{headers:{Accept:'text/html,application/xhtml+xml,*/*;q=0.8'}}).then(function(res){
+        if(res.ok)return res.text().then(function(t){
+          if(t&&t.length>80)return t;
+          throw new Error('empty');
+        });
+        throw new Error('HTTP '+res.status);
+      }).catch(function(e){lastErr=e;return tryNext(i+1)});
+    }
+    return tryNext(0);
+  }
+
+  function getMeta(tt){
+    var types=['movie','series'];
+    function tryType(i){
+      if(i>=types.length)return Promise.resolve(null);
+      return fetchJSON('https://v3-cinemeta.strem.io/meta/'+types[i]+'/'+tt+'.json').then(function(d){
+        if(d&&d.meta)return{type:types[i],meta:d.meta};
+        return tryType(i+1);
+      }).catch(function(){return tryType(i+1)});
+    }
+    return tryType(0);
+  }
+
+  function translateToFa(text){
+    text=clean(text);
+    if(!text||text==='پیدا نشد')return Promise.resolve('');
+    return fetchJSON('https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=fa&dt=t&q='+encodeURIComponent(text.slice(0,4500))).then(function(data){
+      return ((data&&data[0])||[]).map(function(x){return(x&&x[0])||''}).join('').trim();
+    }).catch(function(){return ''});
+  }
+
+  function htmlDecode(s){var ta=document.createElement('textarea');ta.innerHTML=s||'';return ta.value}
+  function normalizeText(t){return String(t||'').replace(/\\u002F/g,'/').replace(/\\\//g,'/').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;/g,"'")}
+  function arrify(v){
+    if(!v)return[];
+    if(Array.isArray(v))return v.reduce(function(a,x){return a.concat(arrify(x))},[]);
+    if(typeof v==='object')return[clean(v.name||v.originalTitle||v.title||v['@id']||'')];
+    return String(v).split(/،|,/).map(clean).filter(Boolean);
+  }
+  function people(v){return uniq(arrify(v).map(function(x){return String(x).replace(/^\s*by\s+/i,'').trim()}).filter(Boolean),function(x){return x.toLowerCase()})}
+  function listPeople(v,max){return people(v).slice(0,max||99).join('، ')}
+  function yearOf(v){return((String(v||'').match(/\b(19|20)\d{2}\b/)||[])[0])||''}
+
+  function extractJsonLdObjects(text){
+    var out=[],t=normalizeText(text),m;
+    var re=/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/ig;
+    while((m=re.exec(t))!==null){try{var data=JSON.parse(htmlDecode(m[1]).trim());Array.isArray(data)?out.push.apply(out,data):out.push(data)}catch(e){}}
+    return out;
+  }
+  function pickMovieJsonLd(objs){
+    return objs.find(function(o){return/Movie|TVSeries|TVEpisode|VideoObject/i.test(String((o&&o['@type'])||''))})||objs[0]||null;
+  }
+  function cleanImageUrl(u){
+    u=htmlDecode(normalizeText(u)).replace(/&/g,'&').replace(/&amp;/g,'&').split(' ')[0];
+    u=u.replace(/\\/g,'').replace(/["'<>]+$/g,'').replace(/\?.*$/,'');
+    u=u.replace(/\._V1_.*?(\.jpg|\.jpeg|\.png|\.webp)$/i,'._V1_$1');
+    return u;
+  }
+  function extractImages(text){
+    var t=normalizeText(text),out=[],m;
+    var regs=[/https?:\\?\/\\?\/m\.media-amazon\.com\/images\/M\/[^"'<>\s]+?\.(?:jpg|jpeg|png|webp)/ig,/https?:\\?\/\\?\/[^"'<>\s]+?\.(?:jpg|jpeg|png|webp)/ig];
+    for(var ri=0;ri<regs.length;ri++){while((m=regs[ri].exec(t))!==null){var u=cleanImageUrl(m[0]);if(/m\.media-amazon\.com\/images\/M\//i.test(u)&&!/sprite|logo|icon|imdb/i.test(u))out.push(u)}}
+    return uniq(out,function(x){return x}).slice(0,30);
+  }
+  function getIMDbDetails(tt){
+    return fetchTextAny('https://www.imdb.com/title/'+tt+'/').then(function(text){
+      var json=pickMovieJsonLd(extractJsonLdObjects(text));
+      return{
+        name:json?json.name:'',
+        description:json?json.description:'',
+        director:listPeople(json?json.director:'',8),
+        writer:listPeople(first(json?json.creator:'',json?json.author:''),8),
+        genre:listPeople(json?json.genre:'',10),
+        year:yearOf(first(json?json.datePublished:'',json?json.dateCreated:'',json?json.copyrightYear:'')),
+        country:listPeople(first(json?json.countryOfOrigin:'',json?json.contentLocation:'',json?json.productionCompany:''),6),
+        language:listPeople(first(json?json.inLanguage:'',json?json.availableLanguage:''),6),
+        cast:people(json?json.actor:'').slice(0,30),
+        rating:(json&&json.aggregateRating)?json.aggregateRating.ratingValue:'',
+        votes:(json&&json.aggregateRating)?json.aggregateRating.ratingCount:'',
+        ageRating:json?json.contentRating:'',
+        releaseDate:json?json.datePublished:'',
+        images:uniq([json?json.image:''].concat(extractImages(text)),function(x){return x}).filter(Boolean).slice(0,14)
+      };
+    }).catch(function(){return{}});
+  }
+
+  function mergeDetails(tt,metaPack,imdbDetails){
+    var m=(metaPack&&metaPack.meta)||{};
+    var name=first(imdbDetails.name,m.name,tt);
+    var genre=first(imdbDetails.genre,listPeople(m.genres,10));
+    var year=first(imdbDetails.year,yearOf(m.releaseInfo));
+    var description=first(imdbDetails.description,m.description);
+    var cast=uniq(((imdbDetails.cast||[]).concat(Array.isArray(m.cast)?m.cast:[])).filter(Boolean),function(x){return x.toLowerCase()}).slice(0,30);
+    return Promise.all([translateToFa(name),translateToFa(description)]).then(function(trans){
+      return{
+        title:name,
+        titleFa:trans[0]||name,
+        type:metaPack?(metaPack.type==='series'?'سریال':metaPack.type==='movie'?'فیلم':'—'):'—',
+        director:imdbDetails.director||listPeople(m.director,8)||'پیدا نشد',
+        writer:imdbDetails.writer||listPeople(first(m.writer,m.writers,m.creator),8)||'پیدا نشد',
+        genre:genre||'پیدا نشد',
+        year:year||'پیدا نشد',
+        country:imdbDetails.country||listPeople(first(m.country,m.countries),6)||'پیدا نشد',
+        language:imdbDetails.language||listPeople(first(m.language,m.languages),6)||'پیدا نشد',
+        rating:first(imdbDetails.rating,m.imdbRating),
+        votes:imdbDetails.votes||m.imdbRatingCount||'',
+        ageRating:imdbDetails.ageRating||m.contentRating||'پیدا نشد',
+        releaseDate:imdbDetails.releaseDate||m.released||'پیدا نشد',
+        runtime:m.runtime||'پیدا نشد',
+        description:description||'پیدا نشد',
+        descriptionFa:trans[1]||'',
+        cast:cast
+      };
+    });
+  }
+
+  function renderMeta(tt,pack,details){
+    var m=(pack&&pack.meta)||{};
+    var poster=m.poster||m.background||(details.images&&details.images[0])||'';
+    lastPoster=poster||lastPoster;
+    posterBox.innerHTML=poster?'<img src="'+esc(poster)+'" alt="'+esc((details&&details.title)||m.name||tt)+'">':'کاور پیدا نشد';
+    nameBox.textContent=(details&&details.titleFa&&details.titleFa!==details.title)?details.titleFa+' / '+details.title:((details&&details.title)||m.name||tt);
+    var bits=[];
+    if(details&&details.year&&details.year!=='پیدا نشد')bits.push(details.year);
+    if(details&&details.type&&details.type!=='—')bits.push(details.type);
+    if(details&&details.genre&&details.genre!=='پیدا نشد')bits.push(details.genre.split('،').slice(0,3).join('، '));
+    if(m.runtime)bits.push(m.runtime);
+    metaBox.textContent=bits.length?bits.join(' • '):tt;
+    var rate=(details&&details.rating)||m.imdbRating;
+    if(rate){ratingBox.classList.remove('hide');ratingBox.querySelector('span').textContent=rate+' / 10'}
+    lastCast=(details&&details.cast&&details.cast.length)?details.cast:(Array.isArray(m.cast)?m.cast.slice(0,30):[]);
+    castBox.innerHTML=lastCast.length?lastCast.map(function(x){return'<span class="chip" title="برای کپی کلیک کن" onclick="copyChip(this,\''+esc(jsEsc(x))+'\')">'+esc(x)+'</span>'}).join(''):'<span class="chip">بازیگر پیدا نشد</span>';
+  }
+
+  function renderDetails(details){
+    lastDetails=details||{};
+    var items=[
+      ['نام انگلیسی',details.title],['نام فارسی',details.titleFa],['کارگردان',details.director],['نویسنده',details.writer],['ژانر',details.genre],['سال',details.year],['کشور',details.country],['زبان',details.language],['تاریخ انتشار',details.releaseDate],['رده سنی',details.ageRating],['نوع',details.type],['مدت زمان',details.runtime],['امتیاز',details.rating?details.rating+' / 10':'پیدا نشد'],['تعداد رأی',details.votes||'پیدا نشد']
+    ];
+    detailsBox.innerHTML=items.map(function(item){return'<div class="detail"><span>'+esc(item[0])+'</span><b>'+esc(item[1]||'پیدا نشد')+'</b></div>'}).join('');
+  }
+
+  function makeIntro(details){
+    var title=details.titleFa&&details.titleFa!=='پیدا نشد'?'«'+details.titleFa+'»':details.title&&details.title!=='—'?'«'+details.title+'»':'این عنوان';
+    var enTitle=details.title&&details.title!==details.titleFa?' با نام انگلیسی '+details.title:'';
+    var type=details.type&&details.type!=='—'?details.type:'اثر';
+    var year=details.year&&details.year!=='پیدا نشد'?' محصول سال '+details.year:'';
+    var genre=details.genre&&details.genre!=='پیدا نشد'?' در ژانر '+details.genre:'';
+    var director=details.director&&details.director!=='پیدا نشد'?' کارگردانی این '+type+' بر عهده '+details.director+' بوده است.':'';
+    var writer=details.writer&&details.writer!=='پیدا نشد'?' نویسندگی اثر را '+details.writer+' انجام داده است.':'';
+    var cast=details.cast&&details.cast.length?' از بازیگران اصلی آن می‌توان به '+details.cast.slice(0,6).join('، ')+' اشاره کرد.':'';
+    var country=details.country&&details.country!=='پیدا نشد'?' کشور سازنده: '+details.country+'.':'';
+    var language=details.language&&details.language!=='پیدا نشد'?' زبان: '+details.language+'.':'';
+    var desc=details.descriptionFa?' '+details.descriptionFa:(details.description&&details.description!=='پیدا نشد'?' '+details.description:'');
+    return(title+enTitle+' یک '+type+year+genre+' است.'+director+writer+cast+country+language+desc).replace(/\s+/g,' ').trim();
+  }
+  function renderIntro(details){lastIntro=makeIntro(details);introBox.value=lastIntro||'—'}
+
+  function truncateText(text,max){
+    text=String(text||'').replace(/\s+/g,' ').trim();
+    max=max||165;
+    return text.length>max?text.slice(0,max-1).trim()+'…':text;
+  }
+  function appCardData(details,tt,vi,mp4){
+    var poster=lastPoster||'';
+    return{
+      imdbId:tt||lastTT||'',videoId:vi||lastVI||'',
+      titleFa:details.titleFa||details.title||'',
+      titleEn:details.title||'',
+      descriptionFa:details.descriptionFa||lastIntro||'',
+      poster:poster,year:details.year||'',genre:details.genre||'',rating:details.rating||'',
+      type:details.type||'',runtime:details.runtime||'',director:details.director||'',
+      cast:Array.isArray(details.cast)?details.cast.slice(0,8):lastCast.slice(0,8),
+      imdbUrl:(tt||lastTT)?'https://www.imdb.com/title/'+(tt||lastTT)+'/':'',
+      trailerEmbed:(vi||lastVI)?'https://www.imdb.com/video/embed/'+(vi||lastVI)+'/':'',
+      trailerMp4:mp4||''
+    };
+  }
+  function buildAppCardHTML(data){
+    var title=esc(data.titleFa||data.titleEn||'عنوان فیلم');
+    var titleEn=esc(data.titleEn||'');
+    var desc=esc(truncateText(data.descriptionFa||'',180));
+    var poster=data.poster?'<img src="'+esc(data.poster)+'" alt="'+title+'">':'<span>Poster</span>';
+    var badges=[data.year,data.type,(data.genre||'').split('،')[0],data.rating?'⭐ '+data.rating:''].filter(Boolean).slice(0,4);
+    var cast=(data.cast||[]).slice(0,5).join('، ');
+    return'<div class="movie-app-card" data-imdb="'+esc(data.imdbId)+'">\n  <div class="movie-poster">'+poster+'</div>\n  <div class="movie-content">\n    <h3>'+title+'</h3>\n    <div class="movie-title-en">'+titleEn+'</div>\n    <div class="movie-badges">'+badges.map(function(b){return'<span>'+esc(b)+'</span>'}).join('')+'</div>\n    <p>'+desc+'</p>\n    <div class="movie-cast">'+esc(cast)+'</div>\n    <div class="movie-actions">\n      '+(data.trailerEmbed?'<a href="'+esc(data.trailerEmbed)+'">تماشای تیزر</a>':'')+(data.imdbUrl?'<a href="'+esc(data.imdbUrl)+'">اطلاعات بیشتر</a>':'')+'\n    </div>\n  </div>\n</div>';
+  }
+  function renderAppCard(details,tt,vi,mp4){
+    lastTT=tt||lastTT;lastVI=vi||lastVI;
+    var data=appCardData(details,tt,vi,mp4);
+    lastAppCardJSON=data;
+    lastAppCardHTML=buildAppCardHTML(data);
+    appCardPreview.innerHTML='<div class="appMovieCard"><div class="appMoviePoster">'+(data.poster?'<img src="'+esc(data.poster)+'" alt="'+esc(data.titleFa||data.titleEn)+'">':'پوستر')+'</div><div class="appMovieInfo"><h3 class="appMovieTitle">'+esc(data.titleFa||data.titleEn||'—')+'</h3><div class="appMovieTitleEn">'+esc(data.titleEn||'')+'</div><div class="appBadges">'+[data.year,data.type,(data.genre||'').split('،')[0],data.rating?'⭐ '+data.rating:''].filter(Boolean).slice(0,4).map(function(b,i){return'<span class="appBadge '+(i===3?'gold':'')+'">' +esc(b)+'</span>'}).join('')+'</div><p class="appMovieDesc">'+esc(truncateText(data.descriptionFa||lastIntro||'',180))+'</p><div class="appMovieCast">'+esc((data.cast||[]).slice(0,5).join('، '))+'</div><div class="appMovieActions">'+(data.trailerEmbed?'<button class="appMovieBtn">تماشای تیزر</button>':'')+'<button class="appMovieBtn dark">جزئیات</button></div></div></div>';
+    appCardCode.value='<!-- HTML کارت برای اپلیکیشن -->\n'+lastAppCardHTML+'\n\n<!-- JSON آماده -->\n'+JSON.stringify(data,null,2);
+    buildFullJSON();
+  }
+
+  function buildReadyTexts(details){
+    var title=details.titleFa||details.title||'این فیلم';
+    var en=details.title&&details.title!==title?' ('+details.title+')':'';
+    var genre=details.genre&&details.genre!=='پیدا نشد'?details.genre:'';
+    var year=details.year&&details.year!=='پیدا نشد'?details.year:'';
+    var rate=details.rating?'امتیاز IMDb: '+details.rating+'/10':'';
+    var cast=(details.cast||[]).slice(0,5).join('، ');
+    var short=title+en+(year?' محصول '+year:'')+(genre?' در ژانر '+genre:'')+' است.'+(rate?' '+rate+'.':'');
+    var full=lastIntro||makeIntro(details);
+    var telegram='🎬 '+title+en+'\n'+(year?'📅 '+year+'\n':'')+(genre?'🎭 '+genre+'\n':'')+(rate?'⭐ '+rate+'\n':'')+(cast?'👥 '+cast+'\n':'')+'\n'+truncateText(full,450);
+    var instagram=title+en+'\n\n'+truncateText(full,360)+'\n\n#فیلم #سریال #معرفی_فیلم #IMDb';
+    var app=title+(year?' • '+year:'')+(details.rating?' • ⭐ '+details.rating:'')+'\n'+truncateText(details.descriptionFa||full,220);
+    return{short:short,full:full,telegram:telegram,instagram:instagram,app:app};
+  }
+  function renderReadyTexts(details){
+    lastReadyTexts=buildReadyTexts(details);
+    readyShort.value=lastReadyTexts.short||'—';
+    readyFull.value=lastReadyTexts.full||'—';
+    readyTelegram.value=lastReadyTexts.telegram||'—';
+    readyInstagram.value=lastReadyTexts.instagram||'—';
+    readyApp.value=lastReadyTexts.app||'—';
+    buildFullJSON();
+  }
+  function buildFullJSON(){
+    lastFullJSON={details:lastDetails,titleDesc:lastTitleDesc,readyTexts:lastReadyTexts,outputs:lastOutputs,appCard:lastAppCardJSON,cast:lastCast,gallery:lastGallery,poster:lastPoster,imdbId:lastTT,videoId:lastVI};
+    return lastFullJSON;
+  }
+  function downloadTextFile(filename,content,type){
+    var blob=new Blob([content],{type:type||'text/plain;charset=utf-8'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(function(){URL.revokeObjectURL(url)},1500);
+    toast('فایل ساخته شد');
+  }
+
+  function renderGallery(images){
+    lastGallery=uniq((images||[]).filter(Boolean),function(x){return x}).slice(0,14);
+    galleryBox.innerHTML=lastGallery.length?lastGallery.map(function(url,i){return'<div class="photo"><img src="'+esc(url)+'" loading="lazy" alt="gallery '+(i+1)+'"><div class="photoActions"><button onclick="copyText(\''+esc(jsEsc(url))+'\')">کپی</button><button onclick="downloadAsset(\''+esc(jsEsc(url))+'\',\'imdb-image-'+(i+1)+'.jpg\')">دانلود</button></div></div>'}).join(''):'<div class="empty">عکس پیدا نشد</div>';
+  }
+  function findGalleryImages(tt){
+    var urls=['https://www.imdb.com/title/'+tt+'/mediaindex/','https://www.imdb.com/title/'+tt+'/'];
+    var images=[];
+    var fetches=urls.map(function(url){return fetchTextAny(url).then(function(text){images=images.concat(extractImages(text))}).catch(function(){})});
+    return Promise.all(fetches).then(function(){return uniq(images,function(x){return x}).slice(0,14)});
+  }
+  function extractMP4(text){
+    var t=normalizeText(text),urls=[],m;
+    var re=/https?:\/\/[^\s"'<>\\]+?\.mp4(?:\?[^\s"'<>\\]*)?/g;
+    while((m=re.exec(t))!==null)urls.push(htmlDecode(m[0]));
+    return urls.find(function(u){return/1080|720|h264|main|high|progressive/i.test(u)})||urls[0]||'';
+  }
+  function extractTitle(text){
+    var t=normalizeText(text);
+    return htmlDecode(((t.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)/i)||[])[1])||((t.match(/<title[^>]*>([^<]+)/i)||[])[1])||'').trim();
+  }
+  function extractTT(text){return getTT(normalizeText(text))}
+  function extractVIs(text){
+    var t=normalizeText(text),found=[],m;
+    var regs=[/\/video\/(vi\d{5,16})/ig,/videoId["']?\s*[:=]\s*["'](vi\d{5,16})/ig,/(vi\d{5,16})/ig];
+    for(var ri=0;ri<regs.length;ri++){while((m=regs[ri].exec(t))!==null)found.push(m[1].toLowerCase())}
+    return uniq(found,function(x){return x});
+  }
+  function scoreVI(text,vi,metaName){
+    var t=normalizeText(text).toLowerCase(),idx=t.indexOf(vi.toLowerCase());if(idx<0)return 0;
+    var snip=t.slice(Math.max(0,idx-900),idx+900),s=1;
+    if(/trailer|official trailer/.test(snip))s+=10;if(/teaser|promo|clip/.test(snip))s+=5;if(/featurette|interview|behind the scenes|bts/.test(snip))s-=4;
+    if(metaName){(metaName.toLowerCase().split(/\s+/).filter(function(x){return x.length>2})).forEach(function(part){if(snip.includes(part))s+=1})}
+    return s;
+  }
+  function findIMDbVI(tt,metaName){
+    var urls=['https://www.imdb.com/title/'+tt+'/videogallery/','https://www.imdb.com/title/'+tt+'/','https://www.imdb.com/title/'+tt+'/videos/'];
+    var candidates=[];
+    var fetches=urls.map(function(url){return fetchTextAny(url).then(function(text){extractVIs(text).forEach(function(vi){candidates.push({vi:vi,score:scoreVI(text,vi,metaName||''),source:url})})}).catch(function(){})});
+    return Promise.all(fetches).then(function(){
+      var sorted=uniq(candidates.sort(function(a,b){return b.score-a.score}),function(x){return x.vi});
+      return sorted.length?sorted[0].vi:'';
+    });
+  }
+  function collectMP4(obj,out){
+    out=out||[];
+    if(!obj||typeof obj!=='object')return out;
+    if(Array.isArray(obj)){obj.forEach(function(x){collectMP4(x,out)});return out}
+    var u=obj.url||obj.video_url||obj.videoUrl||obj.file||obj.src;
+    if(u&&/\.mp4(\?|$)/i.test(u))out.push({url:u,title:obj.title||obj.name||'MP4'});
+    Object.keys(obj).forEach(function(k){if(typeof obj[k]==='object')collectMP4(obj[k],out)});
+    return out;
+  }
+  function getKinoMP4(tt,type){
+    var eps=type==='series'?['shows','movies']:['movies','shows'];
+    function tryEp(i){
+      if(i>=eps.length)return Promise.resolve([]);
+      return fetchJSON('https://api.kinocheck.com/'+eps[i]+'?imdb_id='+encodeURIComponent(tt)+'&language=en&categories=Trailer,Teaser,Clip').then(function(d){
+        var vids=uniq(collectMP4(d),function(v){return v.url});
+        return vids.length?vids:tryEp(i+1);
+      }).catch(function(){return tryEp(i+1)});
+    }
+    return tryEp(0);
+  }
+  function enrichVI(vi){
+    var mp4='',title='',tt='';
+    var urls=['https://www.imdb.com/video/embed/'+vi+'/','https://www.imdb.com/video/'+vi+'/'];
+    var p=Promise.resolve();
+    urls.forEach(function(url){p=p.then(function(){return fetchTextAny(url).then(function(text){mp4=mp4||extractMP4(text);title=title||extractTitle(text);tt=tt||extractTT(text)}).catch(function(){})})});
+    return p.then(function(){return{mp4:mp4,title:title,tt:tt}});
+  }
+
+  function playIMDb(vi){playerBox.innerHTML='<iframe src="https://www.imdb.com/video/embed/'+esc(vi)+'/" allowfullscreen="true"></iframe>'}
+  function playMP4(url){playerBox.innerHTML='<video src="'+esc(url)+'" controls playsinline></video>'}
+  function renderVideos(opts){
+    var vi=opts.vi||'',mp4=opts.mp4||'',kino=opts.kino||[];
+    var items=[];
+    if(vi)items.push('<div class="video" onclick="playIMDb(\''+esc(jsEsc(vi))+'\')"><b>IMDb Official Embed</b><span>'+esc(vi)+'</span><div class="videoActions"><button class="btn dark small" onclick="event.stopPropagation();copyText(\'https://www.imdb.com/video/embed/'+esc(jsEsc(vi))+'/\')">کپی Embed</button>'+(mp4?'<button class="btn small" onclick="event.stopPropagation();downloadAsset(\''+esc(jsEsc(mp4))+'\',\'imdb-teaser.mp4\')">دانلود تیزر</button>':'<button class="btn small" disabled>MP4 پیدا نشد</button>')+'</div></div>');
+    if(mp4)items.push('<div class="video" onclick="playMP4(\''+esc(jsEsc(mp4))+'\')"><b>MP4 مستقیم</b><span>'+esc(mp4)+'</span><div class="videoActions"><button class="btn small" onclick="event.stopPropagation();downloadAsset(\''+esc(jsEsc(mp4))+'\',\'imdb-teaser.mp4\')">دانلود</button><button class="btn dark small" onclick="event.stopPropagation();copyText(\''+esc(jsEsc(mp4))+'\')">کپی لینک</button></div></div>');
+    kino.slice(0,5).forEach(function(v,i){items.push('<div class="video" onclick="playMP4(\''+esc(jsEsc(v.url))+'\')"><b>'+esc(v.title||'MP4')+'</b><span>'+esc(v.url)+'</span><div class="videoActions"><button class="btn small" onclick="event.stopPropagation();downloadAsset(\''+esc(jsEsc(v.url))+'\',\'teaser-'+(i+1)+'.mp4\')">دانلود</button><button class="btn dark small" onclick="event.stopPropagation();copyText(\''+esc(jsEsc(v.url))+'\')">کپی لینک</button></div></div>')});
+    videosBox.innerHTML=items.length?items.join(''):'<div class="empty">ویدئو پیدا نشد</div>';
+  }
+
+  function handleTT(tt,forcedVI){
+    loading('در حال دریافت کاور، مشخصات و بازیگران...');
+    outputRows(buildOutputs({tt:tt,vi:forcedVI,castText:''}));
+    return Promise.all([getMeta(tt),getIMDbDetails(tt)]).then(function(res){
+      var metaPack=res[0],imdbDetails=res[1];
+      return mergeDetails(tt,metaPack,imdbDetails).then(function(details){
+        if(metaPack||imdbDetails.name)renderMeta(tt,metaPack,details);else{nameBox.textContent=tt;metaBox.textContent='اطلاعات پیدا نشد'}
+        renderDetails(details);renderTitleDesc(details);renderIntro(details);renderReadyTexts(details);renderAppCard(details,tt,forcedVI||'','');
+        var baseImages=[(metaPack&&metaPack.meta&&metaPack.meta.poster),(metaPack&&metaPack.meta&&metaPack.meta.background)].concat(imdbDetails.images||[]).filter(Boolean);
+        renderGallery(baseImages);
+        var castText=lastCast.join('، ');
+        outputRows(buildOutputs({tt:tt,vi:forcedVI,castText:castText}));
+
+        loading('در حال پیدا کردن تیزر و گالری تصاویر...');
+        return Promise.all([
+          forcedVI?Promise.resolve(forcedVI):findIMDbVI(tt,(details&&details.title)||''),
+          getKinoMP4(tt,(metaPack&&metaPack.type)||'movie'),
+          findGalleryImages(tt)
+        ]).then(function(res2){
+          var autoVI=res2[0],kinoMP4=res2[1],galleryImages=res2[2];
+          var vi=forcedVI||autoVI||'';
+          renderGallery(baseImages.concat(galleryImages));
+          var mp4='';
+          var enrichP=vi?enrichVI(vi).then(function(extra){mp4=extra.mp4||(kinoMP4[0]&&kinoMP4[0].url)||'';playIMDb(vi);}):Promise.resolve();
+          if(!vi&&kinoMP4[0]&&kinoMP4[0].url){mp4=kinoMP4[0].url;playMP4(mp4)}
+          return enrichP.then(function(){
+            renderVideos({vi:vi,mp4:mp4,kino:kinoMP4.filter(function(v){return v.url!==mp4})});
+            renderAppCard(details,tt,vi,mp4);
+            outputRows(buildOutputs({tt:tt,vi:vi,mp4:mp4,castText:castText}));
+            var ok=vi||mp4;
+            setStatus(ok?(mp4?'آماده است.':'آماده است؛ MP4 مستقیم عمومی پیدا نشد.'):'مشخصات پر شد، اما تیزر قابل دریافت پیدا نشد.',ok?'good':'bad');
+          });
+        });
+      });
+    });
+  }
+
+  function handleVI(vi){
+    loading('در حال دریافت ویدئو...');
+    playIMDb(vi);
+    return enrichVI(vi).then(function(extra){
+      var tt=extra.tt||'';
+      var emptyDetails={title:extra.title||vi,titleFa:'',type:'—',director:'پیدا نشد',writer:'پیدا نشد',genre:'پیدا نشد',year:'پیدا نشد',country:'پیدا نشد',language:'پیدا نشد',runtime:'پیدا نشد',description:'پیدا نشد',descriptionFa:'',cast:[]};
+      if(!tt){
+        return translateToFa(extra.title||vi).then(function(fa){
+          emptyDetails.titleFa=fa;
+          nameBox.textContent=fa&&fa!==(extra.title||vi)?fa+' / '+(extra.title||vi):(extra.title||vi);
+          metaBox.textContent=vi;
+          renderDetails(emptyDetails);renderTitleDesc(emptyDetails);renderIntro(emptyDetails);renderReadyTexts(emptyDetails);renderAppCard(emptyDetails,'',vi,extra.mp4);
+          renderVideos({vi:vi,mp4:extra.mp4,kino:[]});
+          outputRows(buildOutputs({tt:'',vi:vi,mp4:extra.mp4,castText:''}));
+          setStatus(extra.mp4?'آماده است.':'آماده است؛ MP4 مستقیم عمومی پیدا نشد.','good');
+        });
+      }
+      return Promise.all([getMeta(tt),getIMDbDetails(tt)]).then(function(res){
+        var metaPack=res[0],imdbDetails=res[1];
+        return mergeDetails(tt,metaPack,imdbDetails).then(function(details){
+          renderMeta(tt,metaPack,details);
+          return findGalleryImages(tt).then(function(galleryImages){
+            renderGallery([(metaPack&&metaPack.meta&&metaPack.meta.poster),(metaPack&&metaPack.meta&&metaPack.meta.background)].concat(imdbDetails.images||[]).concat(galleryImages).filter(Boolean));
+            renderDetails(details);renderTitleDesc(details);renderIntro(details);renderReadyTexts(details);renderAppCard(details,tt,vi,extra.mp4);
+            var castText=lastCast.join('، ');
+            renderVideos({vi:vi,mp4:extra.mp4,kino:[]});
+            outputRows(buildOutputs({tt:tt,vi:vi,mp4:extra.mp4,castText:castText}));
+            setStatus(extra.mp4?'آماده است.':'آماده است؛ MP4 مستقیم عمومی پیدا نشد.','good');
+          });
+        });
+      });
+    });
+  }
+
+  function find(){
+    var titleValue=titleInput.value.trim();
+    var videoValue=videoInput.value.trim();
+    resetView(true);clearStatus();
+    var tt=getTT(titleValue),vi=getVI(videoValue);
+    if(!tt&&!vi){setStatus('کد اطلاعات tt یا کد ویدئو vi را وارد کن. نمونه: tt0133093 و vi1472252697','bad');return}
+    var p=tt?handleTT(tt,vi||''):handleVI(vi);
+    p.catch(function(e){console.error(e);setStatus('دریافت اطلاعات کامل نشد. احتمالاً یکی از سرویس‌ها پاسخ نداده است.','bad')});
+  }
+
+  $('findBtn').addEventListener('click',find);
+  $('resetBtn').addEventListener('click',function(){resetView(false)});
+  $('demoBtn').addEventListener('click',function(){titleInput.value='tt26657236';videoInput.value='vi1178061593';find()});
+  $('copyCastBtn').addEventListener('click',function(){copyText(lastCast.join('، '))});
+  $('copyGalleryBtn').addEventListener('click',function(){copyText(lastGallery.join('\n'))});
+  $('copyIntroBtn').addEventListener('click',function(){copyText(lastIntro)});
+  $('copyTitleDescBtn').addEventListener('click',function(){copyText('نام انگلیسی: '+(lastTitleDesc.englishTitle||'')+'\nنام فارسی: '+(lastTitleDesc.persianTitle||'')+'\n\nتوضیحات انگلیسی:\n'+(lastTitleDesc.englishDescription||'')+'\n\nتوضیحات فارسی:\n'+(lastTitleDesc.persianDescription||''))});
+  $('copyDetailsBtn').addEventListener('click',function(){copyText(Object.keys(lastDetails).filter(function(k){return!['cast','description','descriptionFa'].includes(k)}).map(function(k){var v=lastDetails[k];return k+': '+(Array.isArray(v)?v.join('، '):v)}).join('\n'))});
+  $('copyAppCardHtmlBtn').addEventListener('click',function(){copyText(lastAppCardHTML)});
+  $('copyAppCardJsonBtn').addEventListener('click',function(){copyText(JSON.stringify(lastAppCardJSON,null,2))});
+  $('copyReadyTextsBtn').addEventListener('click',function(){copyText(Object.keys(lastReadyTexts).map(function(k){return k+':\n'+lastReadyTexts[k]}).join('\n\n'))});
+  document.querySelectorAll('[data-copy-ready]').forEach(function(btn){btn.addEventListener('click',function(){copyText(lastReadyTexts[btn.dataset.copyReady]||'')})});
+  $('copyFullJsonBtn').addEventListener('click',function(){copyText(JSON.stringify(buildFullJSON(),null,2))});
+  $('downloadJsonBtn').addEventListener('click',function(){downloadTextFile('smdb-'+(lastTT||'movie')+'-full.json',JSON.stringify(buildFullJSON(),null,2),'application/json;charset=utf-8')});
+  $('downloadCardHtmlBtn').addEventListener('click',function(){downloadTextFile('smdb-'+(lastTT||'movie')+'-card.html',lastAppCardHTML||'','text/html;charset=utf-8')});
+  $('downloadTxtBtn').addEventListener('click',function(){downloadTextFile('smdb-'+(lastTT||'movie')+'-output.txt',Object.keys(buildFullJSON()).map(function(k){var v=lastFullJSON[k];return k+':\n'+(typeof v==='string'?v:JSON.stringify(v,null,2))}).join('\n\n'))});
+  $('copyApiItemBtn').addEventListener('click',function(){copyText(JSON.stringify(lastAppCardJSON,null,2))});
+  $('downloadApiItemBtn').addEventListener('click',function(){downloadTextFile('smdb-'+(lastTT||'movie')+'-api-item.json',JSON.stringify(lastAppCardJSON,null,2),'application/json;charset=utf-8')});
+  $('copyAllBtn').addEventListener('click',function(){
+    var txt=[];
+    txt.push('نام انگلیسی: '+(lastTitleDesc.englishTitle||''));
+    txt.push('نام فارسی: '+(lastTitleDesc.persianTitle||''));
+    txt.push('توضیحات انگلیسی:\n'+(lastTitleDesc.englishDescription||''));
+    txt.push('توضیحات فارسی:\n'+(lastTitleDesc.persianDescription||''));
+    txt.push('مشخصات:\n'+Object.keys(lastDetails).filter(function(k){return!['cast','description','descriptionFa'].includes(k)}).map(function(k){var v=lastDetails[k];return k+': '+(Array.isArray(v)?v.join('، '):v)}).join('\n'));
+    txt.push('بازیگران: '+lastCast.join('، '));
+    txt.push('متن معرفی:\n'+lastIntro);
+    txt.push('خروجی‌ها:\n'+Object.keys(lastOutputs).filter(function(k){return!['details','intro','titleDesc'].includes(k)}).map(function(k){return k+': '+(lastOutputs[k]||'پیدا نشد')}).join('\n'));
+    copyText(txt.filter(Boolean).join('\n\n'));
+  });
+  document.querySelectorAll('[data-ratio]').forEach(function(btn){btn.addEventListener('click',function(){playerBox.classList.remove('ratio916','ratio11','ratio43');var r=btn.dataset.ratio;if(r==='9:16')playerBox.classList.add('ratio916');if(r==='1:1')playerBox.classList.add('ratio11');if(r==='4:3')playerBox.classList.add('ratio43')})});
+  $('openTrailerBtn').addEventListener('click',function(){var frame=playerBox.querySelector('iframe,video');if(frame&&frame.requestFullscreen)frame.requestFullscreen();else if(playerBox.requestFullscreen)playerBox.requestFullscreen()});
+  $('tgSendPhotoBtn').addEventListener('click',sendTelegramPhoto);
+  $('tgTestTokenBtn').addEventListener('click',testTelegramBot);
+  $('tgClearSettingsBtn').addEventListener('click',clearTelegramSettings);
+  [tgBotToken,tgChatId,tgSendMode,tgEndpoint,tgSaveSettings,tgSendPhotoFirst,tgSendTrailerAfter,tgFallbackEmbed].forEach(function(el){el&&el.addEventListener('change',saveTelegramSettings)});
+  [tgBotToken,tgChatId,tgEndpoint].forEach(function(el){el&&el.addEventListener('input',updateTgStatus)});
+  $('tgSendVideoBtn').addEventListener('click',sendTelegramVideo);
+  $('tgSendAllBtn').addEventListener('click',sendTelegramAll);
+  $('tgOpenShareBtn').addEventListener('click',telegramShareUrl);
+  loadTelegramSettings();
+  titleInput.addEventListener('keydown',function(e){if(e.key==='Enter')find()});
+  videoInput.addEventListener('keydown',function(e){if(e.key==='Enter')find()});
+</script>
 </body>
 </html>
