@@ -470,7 +470,7 @@ function handleReset() {
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
-document.addEventListener('DOMContentLoaded', () => {
+function init() {
   inputImdb    = document.getElementById('input-imdb')   as HTMLInputElement
   inputVideo   = document.getElementById('input-video')  as HTMLInputElement
   inputApiKey  = document.getElementById('input-apikey') as HTMLInputElement
@@ -489,4 +489,12 @@ document.addEventListener('DOMContentLoaded', () => {
   inputImdb.addEventListener('keydown',   e => { if (e.key === 'Enter') inputVideo.focus() })
   inputVideo.addEventListener('keydown',  e => { if (e.key === 'Enter') handleFetch() })
   inputApiKey.addEventListener('keydown', e => { if (e.key === 'Enter') handleFetch() })
-})
+}
+
+// Module scripts are deferred — DOM is already ready when this runs.
+// Guard for any browser that fires DOMContentLoaded before deferred scripts.
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init)
+} else {
+  init()
+}
