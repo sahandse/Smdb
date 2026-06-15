@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f0f0f" />
+  <meta name="description" content="SMDB — ابزار استخراج اطلاعات فیلم از IMDb" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="icon" href="/favicon.ico" />
+  <title>SMDB — استخراج اطلاعات IMDb</title>
+</head>
+<body>
+  <div id="app">
+
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo">SMDB</div>
+      <div class="header-text">
+        <h1>استخراج اطلاعات فیلم از IMDb</h1>
+        <p>کد فیلم و کد ویدئو را وارد کنید — همه اطلاعات خودکار پر می‌شود</p>
+      </div>
+    </header>
+
+    <!-- Input Form -->
+    <div class="form-card">
+      <div class="form-title">🔍 جستجو</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label" for="input-imdb">کد IMDb فیلم</label>
+          <input class="form-input" id="input-imdb" type="text" placeholder="tt0133093" maxlength="20" />
+          <div class="form-hint">مثال: tt0133093 (ماتریکس)</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="input-video">کد ویدئو IMDb</label>
+          <input class="form-input" id="input-video" type="text" placeholder="vi1472252697" maxlength="30" />
+          <div class="form-hint">مثال: vi1472252697 (برای تیزر)</div>
+        </div>
+        <div class="form-group full">
+          <label class="form-label" for="input-apikey">کلید API OMDB</label>
+          <input class="form-input" id="input-apikey" type="text" placeholder="your_api_key_here" />
+          <div class="form-hint">
+            کلید رایگان از <a href="https://www.omdbapi.com/apikey.aspx" target="_blank">omdbapi.com</a> دریافت کنید (۱۰۰۰ درخواست/روز رایگان)
+          </div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-primary" id="btn-fetch">🔍 دریافت اطلاعات</button>
+        <button class="btn-secondary" id="btn-reset">↺ ریست</button>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div id="error-msg">
+      <span>⚠️ </span><span id="error-text"></span>
+    </div>
+
+    <!-- Loading -->
+    <div id="loading">
+      <div class="spinner"></div>
+      <div>در حال دریافت اطلاعات...</div>
+    </div>
+
+    <!-- Results -->
+    <div id="results" style="display:none"></div>
+
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
