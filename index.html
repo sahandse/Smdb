@@ -8,6 +8,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <link rel="icon" href="/favicon.ico" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700;900&display=swap" rel="stylesheet">
   <title>SMDB — استخراج اطلاعات IMDb</title>
 </head>
 <body>
@@ -58,7 +61,7 @@
     <!-- Loading -->
     <div id="loading">
       <div class="spinner"></div>
-      <div>در حال دریافت اطلاعات...</div>
+      <div id="status-msg" style="display:none"></div>
     </div>
 
     <!-- Results -->
