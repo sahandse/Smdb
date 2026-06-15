@@ -663,27 +663,33 @@
 
     // ── Telegram ──────────────────────────────────────────────────────────
     var tgLines=[];
-    tgLines.push('🎬 '+title+(en?'\n🔤 '+en:''));
+    tgLines.push('🎬 '+title);
+    if(en)tgLines.push('📌 نام انگلیسی: '+en);
     tgLines.push('');
     var meta2=[];
-    if(year)meta2.push('📅 '+year);
-    if(type)meta2.push('🎞 '+type);
-    if(runtime)meta2.push('⏱ '+runtime);
-    if(meta2.length)tgLines.push(meta2.join('  |  '));
+    if(year)meta2.push('📅 سال: '+year);
+    if(type)meta2.push('🎞 نوع: '+type);
+    if(runtime)meta2.push('⏱ مدت: '+runtime);
+    if(meta2.length)tgLines.push(meta2.join('  •  '));
     var meta3=[];
-    if(genre)meta3.push('🎭 '+genre.split('،')[0].trim());
-    if(country)meta3.push('🌍 '+country.split('،')[0].trim());
-    if(ageRating)meta3.push('🔞 '+ageRating);
-    if(meta3.length)tgLines.push(meta3.join('  |  '));
-    if(details.rating)tgLines.push('⭐ امتیاز IMDb: '+details.rating+'/10'+(details.votes?' ('+Number(details.votes).toLocaleString()+' رأی)':''));
+    if(genre)meta3.push('🎭 ژانر: '+genre.split('،')[0].trim());
+    if(country)meta3.push('🌍 کشور: '+country.split('،')[0].trim());
+    if(ageRating)meta3.push('🔞 رده سنی: '+ageRating);
+    if(meta3.length)tgLines.push(meta3.join('  •  '));
+    if(details.rating)tgLines.push('⭐ امتیاز IMDb: '+details.rating+' از ۱۰'+(details.votes?' ('+Number(details.votes).toLocaleString()+' رأی)':''));
     if(director)tgLines.push('🎬 کارگردان: '+director);
     if(cast5)tgLines.push('👥 بازیگران: '+cast5);
     tgLines.push('');
-    tgLines.push('📝 '+truncateText(desc||full,500));
+    tgLines.push('📝 '+truncateText(desc||full,520));
     tgLines.push('');
     tgLines.push('━━━━━━━━━━━━━━━━━━━━');
-    if(lastTT)tgLines.push('🔗 https://www.imdb.com/title/'+lastTT+'/');
-    var telegram=tgLines.filter(function(l,i,a){return!(l===''&&a[i-1]==='')}).join('\n');
+    var tgPoster=lastPoster||'';
+    var tgMp4=lastOutputs&&lastOutputs.mp4?lastOutputs.mp4:'';
+    var tgEmbed=lastOutputs&&lastOutputs.officialEmbed?lastOutputs.officialEmbed:(lastVI?'https://www.imdb.com/video/embed/'+lastVI+'/':'');
+    if(tgPoster)tgLines.push('🖼 عکس پوستر:\n'+tgPoster);
+    if(tgMp4)tgLines.push('🎥 تیزر (MP4):\n'+tgMp4);
+    else if(tgEmbed)tgLines.push('🎥 تیزر:\n'+tgEmbed);
+    var telegram=tgLines.filter(function(l,i,a){return!(l===''&&(a[i-1]===''||i===0))}).join('\n');
 
     // ── Instagram ─────────────────────────────────────────────────────────
     var igLines=[];
@@ -842,6 +848,7 @@
             renderVideos({vi:vi,mp4:mp4,kino:kinoMP4.filter(function(v){return v.url!==mp4})});
             renderAppCard(details,tt,vi,mp4);
             outputRows(buildOutputs({tt:tt,vi:vi,mp4:mp4,castText:castText}));
+            renderReadyTexts(details);
             var ok=vi||mp4;
             setStatus(ok?(mp4?'آماده است.':'آماده است؛ MP4 مستقیم عمومی پیدا نشد.'):'مشخصات پر شد، اما تیزر قابل دریافت پیدا نشد.',ok?'good':'bad');
           });
@@ -864,6 +871,7 @@
           renderDetails(emptyDetails);renderTitleDesc(emptyDetails);renderIntro(emptyDetails);renderReadyTexts(emptyDetails);renderAppCard(emptyDetails,'',vi,extra.mp4);
           renderVideos({vi:vi,mp4:extra.mp4,kino:[]});
           outputRows(buildOutputs({tt:'',vi:vi,mp4:extra.mp4,castText:''}));
+          renderReadyTexts(emptyDetails);
           setStatus(extra.mp4?'آماده است.':'آماده است؛ MP4 مستقیم عمومی پیدا نشد.','good');
         });
       }
@@ -877,6 +885,7 @@
             var castText=lastCast.join('، ');
             renderVideos({vi:vi,mp4:extra.mp4,kino:[]});
             outputRows(buildOutputs({tt:tt,vi:vi,mp4:extra.mp4,castText:castText}));
+            renderReadyTexts(details);
             setStatus(extra.mp4?'آماده است.':'آماده است؛ MP4 مستقیم عمومی پیدا نشد.','good');
           });
         });
