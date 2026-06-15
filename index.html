@@ -681,14 +681,8 @@
     if(cast5)tgLines.push('👥 بازیگران: '+cast5);
     tgLines.push('');
     tgLines.push('📝 '+truncateText(desc||full,520));
-    tgLines.push('');
-    tgLines.push('━━━━━━━━━━━━━━━━━━━━');
-    var tgPoster=lastPoster||'';
     var tgMp4=lastOutputs&&lastOutputs.mp4?lastOutputs.mp4:'';
-    var tgEmbed=lastOutputs&&lastOutputs.officialEmbed?lastOutputs.officialEmbed:(lastVI?'https://www.imdb.com/video/embed/'+lastVI+'/':'');
-    if(tgPoster)tgLines.push('🖼 عکس پوستر:\n'+tgPoster);
-    if(tgMp4)tgLines.push('🎥 تیزر (MP4):\n'+tgMp4);
-    else if(tgEmbed)tgLines.push('🎥 تیزر:\n'+tgEmbed);
+    if(tgMp4){tgLines.push('');tgLines.push('━━━━━━━━━━━━━━━━━━━━');tgLines.push('🎥 تیزر:\n'+tgMp4);}
     var telegram=tgLines.filter(function(l,i,a){return!(l===''&&(a[i-1]===''||i===0))}).join('\n');
 
     // ── Instagram ─────────────────────────────────────────────────────────
