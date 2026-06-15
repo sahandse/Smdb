@@ -2,7 +2,7 @@ import type { AppState } from './types'
 import {
   fetchMovieData,
   translateToFarsi,
-  fetchMp4Url,
+  buildMp4Url,
   buildVideoPageUrl,
   buildEmbedUrl,
   buildAltEmbedUrl,
@@ -441,11 +441,7 @@ async function handleFetch() {
       state.persianPlot = await translateToFarsi(state.movie.Plot.substring(0, 500))
     }
 
-    let mp4Url = ''
-    if (video) {
-      setStatus('در حال دریافت لینک MP4...')
-      mp4Url = await fetchMp4Url(video)
-    }
+    const mp4Url = video ? buildMp4Url(video) : ''
 
     setStatus('')
     render(mp4Url)

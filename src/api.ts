@@ -24,38 +24,8 @@ export async function translateToFarsi(text: string): Promise<string> {
   }
 }
 
-export async function fetchMp4Url(videoCode: string): Promise<string> {
-  const videoPageUrl = `https://www.imdb.com/video/${videoCode}`
-  const proxies = [
-    `https://api.allorigins.win/get?url=${encodeURIComponent(videoPageUrl)}`,
-    `https://corsproxy.io/?${encodeURIComponent(videoPageUrl)}`,
-  ]
-
-  for (const proxyUrl of proxies) {
-    try {
-      const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(8000) })
-      if (!res.ok) continue
-      const raw = await res.json().catch(() => null)
-      const html: string = raw?.contents ?? (typeof raw === 'string' ? raw : '')
-      if (!html) continue
-
-      const patterns = [
-        /"contentUrl"\s*:\s*"([^"]+\.mp4[^"]*)"/,
-        /"url"\s*:\s*"(https:\/\/[^"]+\.mp4[^"]*)"/,
-        /https:\/\/imdb-video[^"'\s]+\.mp4[^"'\s]*/,
-        /https:\/\/[a-z0-9.\-]+cloudfront\.net[^"'\s]+\.mp4[^"'\s]*/,
-        /https:\/\/[a-z0-9.\-]+amazonaws\.com[^"'\s]+\.mp4[^"'\s]*/,
-      ]
-
-      for (const pat of patterns) {
-        const m = html.match(pat)
-        if (m) return pat.source.includes('contentUrl') || pat.source.includes('"url"') ? m[1] : m[0]
-      }
-    } catch {
-      continue
-    }
-  }
-  return ''
+export function buildMp4Url(videoCode: string): string {
+  return `https://imdb-video.media-imdb.com/mc/${videoCode}/${videoCode}_480p.mp4`
 }
 
 export function buildVideoPageUrl(videoCode: string): string {
