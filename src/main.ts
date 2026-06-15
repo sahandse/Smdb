@@ -1,4 +1,3 @@
-import './style.css'
 import type { AppState } from './types'
 import {
   fetchMovieData,
