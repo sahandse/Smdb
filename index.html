@@ -253,6 +253,11 @@
 
       <div class="section" id="proOutputsSec">
         <div class="sectionHead"><h2>خروجی‌های حرفه‌ای</h2></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;background:#0d1018;border:1px solid #1e2530;border-radius:13px;padding:8px 12px">
+          <label style="font-size:12px;color:var(--muted);white-space:nowrap">هندل کارت:</label>
+          <input id="cardHandleInput" placeholder="@yourhandle" autocomplete="off" style="flex:1;background:transparent;border:0;outline:0;color:#f0f2f8;font:inherit;font-size:13px;direction:ltr">
+          <button class="btn small" id="cardHandleSaveBtn">ذخیره</button>
+        </div>
         <div class="proActions">
           <button class="btn" id="pngCardBtn">🖼 کارت تصویری PNG</button>
           <button class="btn dark" id="copyFullJsonBtn">کپی JSON کامل</button>
@@ -1166,6 +1171,15 @@
   $('tplTgClearBtn').addEventListener('click',function(){var e=$('tplTelegram');if(e)e.value='';localStorage.removeItem('smdb_tg_tpl');if(lastDetails&&lastDetails.title)renderReadyTexts(lastDetails);toast('قالب تلگرام پاک شد')});
   $('tplIgClearBtn').addEventListener('click',function(){var e=$('tplInstagram');if(e)e.value='';localStorage.removeItem('smdb_ig_tpl');if(lastDetails&&lastDetails.title)renderReadyTexts(lastDetails);toast('قالب اینستاگرام پاک شد')});
 
+  // Handle for PNG card
+  (function(){var ci=$('cardHandleInput');if(ci){var sv=localStorage.getItem('smdb_handle');if(sv)ci.value=sv;}})();
+  var _chs=$('cardHandleSaveBtn');
+  if(_chs)_chs.addEventListener('click',function(){
+    var ci=$('cardHandleInput');var v=ci?ci.value.trim():'';
+    if(v)localStorage.setItem('smdb_handle',v);else localStorage.removeItem('smdb_handle');
+    toast('هندل ذخیره شد');
+  });
+
   // ── PNG Card Generator ─────────────────────────────────────────────────
   function drawRRect(ctx,x,y,w,h,r){
     ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
@@ -1187,10 +1201,11 @@
   function generatePngCard(){
     if(!lastDetails||!lastDetails.title){toast('ابتدا یک فیلم دریافت کن');return}
     toast('در حال ساخت کارت...');
-    var W=1080,H=1350;
+    var W=1080,H=1080;
     var canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;
     var ctx=canvas.getContext('2d');
     var F='Vazirmatn,Tahoma,Arial',FS='Tahoma,Arial';
+    var handle=localStorage.getItem('smdb_handle')||'';
 
     function finish(){
       lastCanvas=canvas;
@@ -1200,84 +1215,93 @@
     }
 
     function draw(pi){
-      // ── Solid dark background ─────────────────────────────────────
-      ctx.fillStyle='#080b10';ctx.fillRect(0,0,W,H);
+      // ── Background ──────────────────────────────────────────────────────
+      ctx.fillStyle='#060810';ctx.fillRect(0,0,W,H);
       if(pi){
-        try{ctx.filter='blur(50px) saturate(1.3) brightness(0.12)'}catch(e){}
-        var s=Math.max(W/pi.width,H/pi.height);
+        try{ctx.filter='blur(55px) saturate(1.4) brightness(0.14)'}catch(e){}
+        var s=Math.max(W/pi.width,H/pi.height)*1.1;
         ctx.drawImage(pi,(W-pi.width*s)/2,(H-pi.height*s)/2,pi.width*s,pi.height*s);
         ctx.filter='none';
       }
-      ctx.fillStyle='rgba(3,5,12,0.7)';ctx.fillRect(0,0,W,H);
+      var ov=ctx.createLinearGradient(0,0,0,H);
+      ov.addColorStop(0,'rgba(6,8,16,0.82)');ov.addColorStop(1,'rgba(6,8,16,0.9)');
+      ctx.fillStyle=ov;ctx.fillRect(0,0,W,H);
 
-      // ── Dark card with gold border ────────────────────────────────
-      var MX=30,MY=30,MW=W-60,MH=H-60;
-      ctx.fillStyle='#0d1018';drawRRect(ctx,MX,MY,MW,MH,26);ctx.fill();
-      var bd=ctx.createLinearGradient(MX,MY,MX+MW,MY+MH);
-      bd.addColorStop(0,'rgba(245,197,24,0.6)');
-      bd.addColorStop(0.5,'rgba(245,197,24,0.12)');
-      bd.addColorStop(1,'rgba(245,197,24,0.5)');
-      ctx.strokeStyle=bd;ctx.lineWidth=1.5;drawRRect(ctx,MX,MY,MW,MH,26);ctx.stroke();
+      // ── Card frame ──────────────────────────────────────────────────────
+      var MX=28,MY=28,MW=W-56,MH=H-56;
+      ctx.fillStyle='rgba(13,16,26,0.5)';drawRRect(ctx,MX,MY,MW,MH,24);ctx.fill();
+      var bord=ctx.createLinearGradient(MX,MY,MX+MW,MY+MH);
+      bord.addColorStop(0,'rgba(245,197,24,0.55)');
+      bord.addColorStop(0.5,'rgba(245,197,24,0.08)');
+      bord.addColorStop(1,'rgba(245,197,24,0.45)');
+      ctx.strokeStyle=bord;ctx.lineWidth=1.5;drawRRect(ctx,MX,MY,MW,MH,24);ctx.stroke();
 
-      var P=38,IW=MW-P*2,IX=MX+P;
+      var P=44,IX=MX+P,IW=MW-P*2,CX=IX+IW/2;
+      var CurY=MY+P;
 
-      // ── Poster (top-right) ────────────────────────────────────────
-      var PW=300,PH=450,PX=MX+MW-P-PW,PY=MY+P;
+      // ── Section 1: Titles (full width, centered) ────────────────────────
+      var faTitle=lastDetails.titleFa||lastDetails.title||'—';
+      var enTitle=lastDetails.title||'';
+      ctx.textAlign='center';
+      ctx.fillStyle='#f0f2f8';ctx.font='bold 50px '+F;
+      var tLH=62,tWords=faTitle.split(' '),tLine='',tLines=[];
+      for(var ti=0;ti<tWords.length;ti++){
+        var tT=tLine?tLine+' '+tWords[ti]:tWords[ti];
+        if(ctx.measureText(tT).width>IW&&tLine){tLines.push(tLine);tLine=tWords[ti];if(tLines.length>=2)break;}else tLine=tT;
+      }
+      if(tLines.length<2&&tLine)tLines.push(tLine);
+      tLines.forEach(function(l,i){ctx.fillText(l,CX,CurY+tLH+i*tLH)});
+      CurY+=tLines.length*tLH+14;
+
+      if(enTitle&&enTitle!==faTitle){
+        ctx.fillStyle='#6878a0';ctx.font='19px '+FS;
+        ctx.fillText(enTitle.length>52?enTitle.slice(0,51)+'…':enTitle,CX,CurY);
+        CurY+=30;
+      }
+
+      // Gold fade separator
+      CurY+=8;
+      var sg1=ctx.createLinearGradient(IX,CurY,IX+IW,CurY);
+      sg1.addColorStop(0,'rgba(245,197,24,0)');sg1.addColorStop(0.3,'rgba(245,197,24,0.38)');
+      sg1.addColorStop(0.7,'rgba(245,197,24,0.38)');sg1.addColorStop(1,'rgba(245,197,24,0)');
+      ctx.fillStyle=sg1;ctx.fillRect(IX,CurY,IW,1);CurY+=16;
+
+      // ── Section 2: Poster (right) + Info column (left) ─────────────────
+      var PW=240,PH=360,PX=IX+IW-PW,PY=CurY;
+
       if(pi){
-        ctx.save();drawRRect(ctx,PX,PY,PW,PH,14);ctx.clip();
+        ctx.save();drawRRect(ctx,PX,PY,PW,PH,12);ctx.clip();
         var ps=Math.max(PW/pi.width,PH/pi.height);
         ctx.drawImage(pi,PX+(PW-pi.width*ps)/2,PY+(PH-pi.height*ps)/2,pi.width*ps,pi.height*ps);
         ctx.restore();
-        ctx.strokeStyle='rgba(245,197,24,0.3)';ctx.lineWidth=1.5;drawRRect(ctx,PX,PY,PW,PH,14);ctx.stroke();
+        var pg=ctx.createLinearGradient(PX,PY,PX+PW,PY+PH);
+        pg.addColorStop(0,'rgba(245,197,24,0.55)');pg.addColorStop(1,'rgba(245,197,24,0.15)');
+        ctx.strokeStyle=pg;ctx.lineWidth=1.5;drawRRect(ctx,PX,PY,PW,PH,12);ctx.stroke();
       }
 
-      // ── Left title column (top-left, beside poster) ───────────────
-      var TW=pi?IW-PW-22:IW;
-      var TR=pi?PX-16:MX+MW-P;
-      var CurY=MY+P;
+      // Vertical divider between left col and poster
+      var ColW=IW-PW-22,ColX=IX,InfoY=PY;
+      var vg=ctx.createLinearGradient(ColX+ColW+10,PY,ColX+ColW+10,PY+PH);
+      vg.addColorStop(0,'rgba(245,197,24,0)');vg.addColorStop(0.2,'rgba(245,197,24,0.28)');
+      vg.addColorStop(0.8,'rgba(245,197,24,0.28)');vg.addColorStop(1,'rgba(245,197,24,0)');
+      ctx.fillStyle=vg;ctx.fillRect(ColX+ColW+10,PY,1,PH);
 
-      // SMDB badge
-      ctx.fillStyle='#f5c518';drawRRect(ctx,IX,CurY,62,24,7);ctx.fill();
-      ctx.fillStyle='#111';ctx.font='bold 13px '+FS;ctx.textAlign='center';
-      ctx.fillText('SMDB',IX+31,CurY+17);
-      CurY+=38;
-
-      // Persian title
-      ctx.fillStyle='#f0f2f8';ctx.font='bold 54px '+F;ctx.textAlign='right';
-      var faTitle=lastDetails.titleFa||lastDetails.title||'—';
-      var tw=faTitle.split(' '),tl='',tls=[];
-      for(var ti=0;ti<tw.length;ti++){
-        var tt2=tl?tl+' '+tw[ti]:tw[ti];
-        if(ctx.measureText(tt2).width>TW&&tl){tls.push(tl);tl=tw[ti];if(tls.length>=2)break;}else tl=tt2;
-      }
-      if(tls.length<2&&tl)tls.push(tl);
-      tls.forEach(function(l,i){ctx.fillText(l,TR,CurY+i*64)});
-      CurY+=tls.length*64+6;
-
-      // English title
-      if(lastDetails.title&&lastDetails.title!==faTitle){
-        ctx.fillStyle='#606880';ctx.font='21px '+FS;ctx.textAlign='left';
-        var enT=lastDetails.title.length>30?lastDetails.title.slice(0,29)+'…':lastDetails.title;
-        ctx.fillText(enT,IX,CurY);
-      }
-
-      // ── Separator 1: always at bottom of poster (poster is the anchor) ─
-      var SEP1=PY+PH+22;
-      ctx.fillStyle='rgba(255,255,255,0.07)';ctx.fillRect(IX,SEP1,IW,1);
-      CurY=SEP1+20;
-
-      // ── IMDb rating + meta (full width, below poster) ─────────────
+      // IMDb badge
       if(lastDetails.rating){
-        var RX=IX,RY=CurY,RW=128,RH=48;
-        ctx.fillStyle='#f5c518';drawRRect(ctx,RX,RY,RW,RH,11);ctx.fill();
+        var RX=ColX,RY=InfoY,RW=130,RH=54;
+        var rg=ctx.createLinearGradient(RX,RY,RX+RW,RY+RH);
+        rg.addColorStop(0,'rgba(245,197,24,0.92)');rg.addColorStop(1,'rgba(210,158,8,0.88)');
+        ctx.fillStyle=rg;drawRRect(ctx,RX,RY,RW,RH,12);ctx.fill();
+        ctx.fillStyle='rgba(255,255,255,0.13)';drawRRect(ctx,RX,RY,RW,RH/2,12);ctx.fill();
         ctx.fillStyle='#111';ctx.font='bold 26px '+FS;ctx.textAlign='center';
-        ctx.fillText(lastDetails.rating,RX+RW/2,RY+29);
-        ctx.font='bold 11px '+FS;ctx.fillText('IMDb',RX+RW/2,RY+44);
+        ctx.fillText('⭐ '+lastDetails.rating,RX+RW/2,RY+34);
+        ctx.font='bold 11px '+FS;ctx.fillText('IMDb',RX+RW/2,RY+50);
+        InfoY+=RH+8;
         if(lastDetails.votes){
-          ctx.fillStyle='#8087a0';ctx.font='14px '+F;ctx.textAlign='left';
-          ctx.fillText(Number(lastDetails.votes).toLocaleString()+' رأی',RX+RW+14,RY+24);
+          ctx.fillStyle='#6878a0';ctx.font='13px '+F;ctx.textAlign='left';
+          ctx.fillText(Number(lastDetails.votes).toLocaleString()+' رأی',ColX,InfoY+13);
+          InfoY+=24;
         }
-        CurY+=RH+12;
       }
 
       // Meta pills: year | country | runtime
@@ -1286,73 +1310,87 @@
       if(lastDetails.country&&lastDetails.country!=='پیدا نشد')mp.push(lastDetails.country.split('،')[0].trim());
       if(lastDetails.runtime&&lastDetails.runtime!=='پیدا نشد')mp.push(lastDetails.runtime);
       if(mp.length){
-        var ppx=IX,ppy=CurY,pph=30;
+        InfoY+=4;var ppx=ColX,ppy=InfoY,pph=26;
         mp.forEach(function(v){
-          ctx.font='bold 14px '+F;var ppw=ctx.measureText(v).width+20;
-          ctx.fillStyle='#181d2a';drawRRect(ctx,ppx,ppy,ppw,pph,8);ctx.fill();
-          ctx.strokeStyle='rgba(255,255,255,0.07)';ctx.lineWidth=1;drawRRect(ctx,ppx,ppy,ppw,pph,8);ctx.stroke();
-          ctx.fillStyle='#b8bdd4';ctx.textAlign='center';ctx.fillText(v,ppx+ppw/2,ppy+21);
-          ppx+=ppw+8;
+          ctx.font='bold 13px '+F;var ppw=ctx.measureText(v).width+18;
+          if(ppx+ppw>ColX+ColW){ppx=ColX;ppy+=pph+5;}
+          ctx.fillStyle='rgba(18,22,38,0.85)';drawRRect(ctx,ppx,ppy,ppw,pph,7);ctx.fill();
+          ctx.strokeStyle='rgba(255,255,255,0.08)';ctx.lineWidth=1;drawRRect(ctx,ppx,ppy,ppw,pph,7);ctx.stroke();
+          ctx.fillStyle='#b0b8d0';ctx.textAlign='center';ctx.fillText(v,ppx+ppw/2,ppy+18);
+          ppx+=ppw+7;
         });
-        CurY+=pph+9;
+        InfoY=ppy+pph+8;
       }
 
-      // Genre + Type pills
+      // Genre + type chips
       var gp=[];
       if(lastDetails.type&&lastDetails.type!=='—')gp.push(lastDetails.type);
       (lastDetails.genre||'').split('،').slice(0,4).forEach(function(g){var t=g.trim();if(t&&t!=='پیدا نشد')gp.push(t)});
       if(gp.length){
-        var gx=IX,gy=CurY,gh=27;
+        InfoY+=2;var gx=ColX,gy=InfoY,gh=24;
         gp.forEach(function(g){
-          ctx.font='13px '+F;var gw=ctx.measureText(g).width+16;
-          ctx.fillStyle='rgba(245,197,24,0.1)';drawRRect(ctx,gx,gy,gw,gh,7);ctx.fill();
-          ctx.strokeStyle='rgba(245,197,24,0.32)';ctx.lineWidth=1;drawRRect(ctx,gx,gy,gw,gh,7);ctx.stroke();
-          ctx.fillStyle='#d4a800';ctx.textAlign='center';ctx.fillText(g,gx+gw/2,gy+19);
-          gx+=gw+7;
+          ctx.font='12px '+F;var gw=ctx.measureText(g).width+14;
+          if(gx+gw>ColX+ColW){gx=ColX;gy+=gh+5;}
+          ctx.fillStyle='rgba(245,197,24,0.1)';drawRRect(ctx,gx,gy,gw,gh,6);ctx.fill();
+          ctx.strokeStyle='rgba(245,197,24,0.3)';ctx.lineWidth=1;drawRRect(ctx,gx,gy,gw,gh,6);ctx.stroke();
+          ctx.fillStyle='#d4a800';ctx.textAlign='center';ctx.fillText(g,gx+gw/2,gy+16);
+          gx+=gw+6;
         });
-        CurY+=gh+8;
+        InfoY=gy+gh+8;
       }
 
       // Age rating
       if(lastDetails.ageRating&&lastDetails.ageRating!=='پیدا نشد'){
         ctx.font='bold 12px '+FS;
-        var arw=ctx.measureText(lastDetails.ageRating).width+16,arh=24;
-        ctx.fillStyle='rgba(200,50,50,0.12)';drawRRect(ctx,IX,CurY,arw,arh,5);ctx.fill();
-        ctx.strokeStyle='rgba(200,50,50,0.35)';ctx.lineWidth=1;drawRRect(ctx,IX,CurY,arw,arh,5);ctx.stroke();
-        ctx.fillStyle='#e06060';ctx.textAlign='center';ctx.fillText(lastDetails.ageRating,IX+arw/2,CurY+16);
-        CurY+=arh+8;
+        var arw=ctx.measureText(lastDetails.ageRating).width+16,arh=22;
+        ctx.fillStyle='rgba(200,50,50,0.12)';drawRRect(ctx,ColX,InfoY,arw,arh,5);ctx.fill();
+        ctx.strokeStyle='rgba(200,50,50,0.35)';ctx.lineWidth=1;drawRRect(ctx,ColX,InfoY,arw,arh,5);ctx.stroke();
+        ctx.fillStyle='#e06060';ctx.textAlign='center';ctx.fillText(lastDetails.ageRating,ColX+arw/2,InfoY+15);
+        InfoY+=arh+8;
       }
 
-      // ── Separator 2 ───────────────────────────────────────────────
-      CurY+=6;
-      ctx.fillStyle='rgba(255,255,255,0.07)';ctx.fillRect(IX,CurY,IW,1);
-      CurY+=18;
+      // Director
+      if(lastDetails.director&&lastDetails.director!=='پیدا نشد'&&InfoY+22<PY+PH-4){
+        ctx.fillStyle='#4a5468';ctx.font='12px '+F;ctx.textAlign='left';
+        ctx.fillText('کارگردان:',ColX,InfoY+14);
+        ctx.fillStyle='#909ab8';
+        var ds=lastDetails.director.length>26?lastDetails.director.slice(0,25)+'…':lastDetails.director;
+        ctx.fillText(ds,ColX+72,InfoY+14);
+      }
 
-      // ── Telegram text (no trailer section) ────────────────────────
-      var tgFull=(lastReadyTexts&&lastReadyTexts.telegram)||'';
-      var tgCard=tgFull.replace(/\n*━+[\s\S]*/,'').trim();
-      if(tgCard){
-        ctx.fillStyle='#c8ccdc';ctx.font='21px '+F;ctx.textAlign='right';
-        var lh=31,maxL=Math.min(18,Math.max(4,Math.floor((MY+MH-P-18-CurY)/lh))),drawn=0;
-        tgCard.split('\n').forEach(function(rl){
-          if(drawn>=maxL)return;
-          if(!rl.trim()){if(drawn>0)CurY+=9;return;}
-          var wds=rl.split(' '),ln='';
-          wds.forEach(function(w){
-            if(drawn>=maxL)return;
-            var t=ln?ln+' '+w:w;
-            if(ctx.measureText(t).width>IW&&ln){ctx.fillText(ln,MX+MW-P,CurY);CurY+=lh;drawn++;ln=w;}else ln=t;
-          });
-          if(drawn<maxL&&ln){ctx.fillText(ln,MX+MW-P,CurY);CurY+=lh;drawn++;}
-        });
+      // ── Full-width separator (below poster bottom) ──────────────────────
+      CurY=PY+PH+16;
+      var sg2=ctx.createLinearGradient(IX,CurY,IX+IW,CurY);
+      sg2.addColorStop(0,'rgba(255,255,255,0)');sg2.addColorStop(0.3,'rgba(255,255,255,0.07)');
+      sg2.addColorStop(0.7,'rgba(255,255,255,0.07)');sg2.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.fillStyle=sg2;ctx.fillRect(IX,CurY,IW,1);CurY+=18;
+
+      // ── Section 3: Persian description ─────────────────────────────────
+      var footH=handle?50:0;
+      var maxBottom=MY+MH-P-footH-8;
+      var desc=lastDetails.descriptionFa||lastDetails.description||'';
+      if(desc){
+        var dlh=26,maxDL=Math.min(7,Math.max(2,Math.floor((maxBottom-CurY)/dlh)));
+        ctx.fillStyle='#8898b8';ctx.font='17px '+F;ctx.textAlign='right';
+        ctxWrap(ctx,desc,IX+IW,CurY+dlh-4,IW,dlh,maxDL);
+      }
+
+      // ── Footer: @handle ─────────────────────────────────────────────────
+      if(handle){
+        var fy=MY+MH-P;
+        var fsg=ctx.createLinearGradient(IX,fy-28,IX+IW,fy-28);
+        fsg.addColorStop(0,'rgba(245,197,24,0)');fsg.addColorStop(0.3,'rgba(245,197,24,0.28)');
+        fsg.addColorStop(0.7,'rgba(245,197,24,0.28)');fsg.addColorStop(1,'rgba(245,197,24,0)');
+        ctx.fillStyle=fsg;ctx.fillRect(IX,fy-28,IW,1);
+        ctx.fillStyle='rgba(245,197,24,0.7)';ctx.font='bold 18px '+FS;ctx.textAlign='center';
+        ctx.fillText(handle,CX,fy);
       }
 
       finish();
     }
 
     function doRender(){draw(lastPosterImg);}
-
-    document.fonts.load('bold 54px Vazirmatn').then(doRender).catch(doRender);
+    document.fonts.load('bold 50px Vazirmatn').then(doRender).catch(doRender);
   }
 </script>
 </body>
