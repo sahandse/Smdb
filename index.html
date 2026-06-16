@@ -299,6 +299,23 @@
         <div class="sectionHead"><h2>گالری تصاویر</h2><div class="actions"><button class="btn dark small" id="copyGalleryBtn">کپی لینک عکس‌ها</button></div></div>
         <div class="gallery" id="gallery"><div class="empty">—</div></div>
       </div>
+
+      <div class="section" id="webpConverterSec">
+        <div class="sectionHead"><h2>تبدیل WebP به JPG</h2><button class="btn dark small" id="webpClearBtn" style="display:none">پاک کردن</button></div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div id="webpDropZone" style="border:2px dashed #2a3040;border-radius:14px;padding:22px 14px;text-align:center;cursor:pointer;transition:.2s;color:var(--muted);font-size:13px;background:var(--soft2)">
+            <div style="font-size:22px;margin-bottom:7px">📂</div>
+            <div>فایل WebP را اینجا بکش و بینداز یا کلیک کن</div>
+            <div style="font-size:11px;margin-top:5px;opacity:.6">چند فایل همزمان قابل انتخاب است</div>
+            <input type="file" id="webpFileInput" accept="image/*" style="display:none" multiple>
+          </div>
+          <div style="display:flex;gap:8px">
+            <input id="webpUrlInput" class="field" style="flex:1;direction:ltr;text-align:left" placeholder="https://... لینک مستقیم عکس WebP">
+            <button class="btn small" id="webpUrlBtn">تبدیل</button>
+          </div>
+          <div id="webpResultGrid" class="gallery" style="display:none"></div>
+        </div>
+      </div>
     </section>
   </section>
 </main>
@@ -1435,6 +1452,86 @@
     function doRender(){draw(lastPosterImg);}
     document.fonts.load('bold 50px Vazirmatn').then(doRender).catch(doRender);
   }
+
+  // ── WebP → JPG Converter ────────────────────────────────────────────────
+  (function(){
+    var dropZone=$('webpDropZone');
+    var fileInput=$('webpFileInput');
+    var urlInput=$('webpUrlInput');
+    var urlBtn=$('webpUrlBtn');
+    var resultGrid=$('webpResultGrid');
+    var clearBtn=$('webpClearBtn');
+
+    function convertAndAdd(blob, origName){
+      var bu=URL.createObjectURL(blob);
+      var img=new Image();
+      img.onload=function(){
+        var cv=document.createElement('canvas');
+        cv.width=img.naturalWidth;cv.height=img.naturalHeight;
+        cv.getContext('2d').drawImage(img,0,0);
+        URL.revokeObjectURL(bu);
+        cv.toBlob(function(jpgBlob){
+          if(!jpgBlob){toast('تبدیل ناموفق');return;}
+          var jpgUrl=URL.createObjectURL(jpgBlob);
+          var jpgName=origName.replace(/\.[^.]+$/,'')+'.jpg';
+          var div=document.createElement('div');div.className='photo';
+          var imgEl=document.createElement('img');imgEl.src=jpgUrl;imgEl.alt=jpgName;
+          var acts=document.createElement('div');acts.className='photoActions';
+          var dlBtn=document.createElement('button');dlBtn.textContent='دانلود JPG';
+          dlBtn.addEventListener('click',function(){
+            var a=document.createElement('a');a.href=jpgUrl;a.download=jpgName;
+            document.body.appendChild(a);a.click();a.remove();toast('دانلود شروع شد');
+          });
+          acts.appendChild(dlBtn);div.appendChild(imgEl);div.appendChild(acts);
+          resultGrid.appendChild(div);
+          resultGrid.style.display='grid';clearBtn.style.display='';
+          toast('تبدیل شد ✓');
+        },'image/jpeg',0.92);
+      };
+      img.onerror=function(){URL.revokeObjectURL(bu);toast('فایل معتبر نیست');};
+      img.src=bu;
+    }
+
+    function handleFiles(files){
+      Array.from(files).forEach(function(f){convertAndAdd(f,f.name);});
+    }
+
+    dropZone.addEventListener('click',function(){fileInput.click();});
+    fileInput.addEventListener('change',function(){if(fileInput.files.length)handleFiles(fileInput.files);fileInput.value='';});
+    dropZone.addEventListener('dragover',function(e){e.preventDefault();dropZone.style.borderColor='var(--brand)';dropZone.style.background='rgba(245,197,24,0.06)';});
+    dropZone.addEventListener('dragleave',function(){dropZone.style.borderColor='#2a3040';dropZone.style.background='var(--soft2)';});
+    dropZone.addEventListener('drop',function(e){
+      e.preventDefault();dropZone.style.borderColor='#2a3040';dropZone.style.background='var(--soft2)';
+      var files=Array.from(e.dataTransfer.files).filter(function(f){return f.type.startsWith('image/');});
+      if(files.length)handleFiles(files);else toast('فایل تصویری انتخاب نشد');
+    });
+
+    function convertFromUrl(){
+      var url=urlInput.value.trim();
+      if(!url){toast('لینک وارد نشده');return;}
+      toast('در حال دریافت...');
+      var pList=[
+        'https://api.allorigins.win/raw?url='+encodeURIComponent(url),
+        'https://corsproxy.io/?'+encodeURIComponent(url),
+        'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(url)
+      ];
+      function tryP(i){
+        if(i>=pList.length){toast('دریافت ناموفق — لینک قابل دسترس نیست');return;}
+        fetch(pList[i]).then(function(r){if(!r.ok)throw 0;return r.blob();})
+        .then(function(blob){
+          var fname=(url.split('/').pop().split('?')[0])||'image.webp';
+          convertAndAdd(blob,fname);urlInput.value='';
+        }).catch(function(){tryP(i+1);});
+      }
+      tryP(0);
+    }
+    urlBtn.addEventListener('click',convertFromUrl);
+    urlInput.addEventListener('keydown',function(e){if(e.key==='Enter')convertFromUrl();});
+
+    clearBtn.addEventListener('click',function(){
+      resultGrid.innerHTML='';resultGrid.style.display='none';clearBtn.style.display='none';
+    });
+  })();
 </script>
 </body>
 </html>
