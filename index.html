@@ -311,7 +311,7 @@
   var $ = function(id){ return document.getElementById(id); };
   var titleInput=$('titleInput'), videoInput=$('videoInput'), statusBox=$('status'), posterBox=$('poster'), nameBox=$('name'), metaBox=$('meta'), ratingBox=$('rating'), playerBox=$('player'), linksBox=$('links'), castBox=$('cast'), videosBox=$('videos'), galleryBox=$('gallery'), detailsBox=$('details'), introBox=$('introText'), titleDescRows=$('titleDescRows'), appCardPreview=$('appCardPreview'), appCardCode=$('appCardCode'), readyShort=$('readyShort'), readyFull=$('readyFull'), readyTelegram=$('readyTelegram'), readyInstagram=$('readyInstagram'), readyApp=$('readyApp');
   var tgBotToken=$('tgBotToken'), tgChatId=$('tgChatId'), tgSaveSettings=$('tgSaveSettings'), tgSendMode=$('tgSendMode'), tgEndpoint=$('tgEndpoint'), tgSendPhotoFirst=$('tgSendPhotoFirst'), tgSendTrailerAfter=$('tgSendTrailerAfter'), tgFallbackEmbed=$('tgFallbackEmbed'), tgStatus=$('tgStatus');
-  var lastCast=[], lastOutputs={}, lastGallery=[], lastDetails={}, lastIntro='', lastTitleDesc={}, lastPoster='', lastTT='', lastVI='', lastAppCardHTML='', lastAppCardJSON={}, lastReadyTexts={}, lastFullJSON={}, lastCanvas=null;
+  var lastCast=[], lastOutputs={}, lastGallery=[], lastDetails={}, lastIntro='', lastTitleDesc={}, lastPoster='', lastTT='', lastVI='', lastAppCardHTML='', lastAppCardJSON={}, lastReadyTexts={}, lastFullJSON={}, lastCanvas=null, lastPosterImg=null;
 
   var proxies = [
     function(url){ return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url); },
@@ -319,6 +319,38 @@
     function(url){ return 'https://corsproxy.io/?' + encodeURIComponent(url); },
     function(url){ return 'https://thingproxy.freeboard.io/fetch/' + url; }
   ];
+
+  function preloadPoster(url){
+    var btn=$('pngCardBtn');
+    lastPosterImg=null;
+    if(!url){if(btn){btn.disabled=false;btn.textContent='🖼 کارت PNG';}return;}
+    if(btn){btn.disabled=true;btn.textContent='⏳ بارگذاری کاور...';}
+    var proxyUrls=[
+      'https://api.allorigins.win/raw?url='+encodeURIComponent(url),
+      'https://corsproxy.io/?'+encodeURIComponent(url),
+      'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(url)
+    ];
+    function tryNext(i){
+      if(i>=proxyUrls.length){
+        if(btn){btn.disabled=false;btn.textContent='🖼 کارت PNG';}
+        return;
+      }
+      fetch(proxyUrls[i]).then(function(r){
+        if(!r.ok)throw new Error('bad');
+        return r.blob();
+      }).then(function(blob){
+        var bu=URL.createObjectURL(blob);
+        var img=new Image();
+        img.onload=function(){
+          lastPosterImg=img;
+          if(btn){btn.disabled=false;btn.textContent='🖼 کارت PNG ✓';}
+        };
+        img.onerror=function(){URL.revokeObjectURL(bu);tryNext(i+1)};
+        img.src=bu;
+      }).catch(function(){tryNext(i+1)});
+    }
+    tryNext(0);
+  }
 
   function esc(v){return String(v == null ? '' : v).replace(/[&<>'"]/g,function(s){return({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[s]);})}
   function jsEsc(v){return String(v == null ? '' : v).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n').replace(/\r/g,'')}
@@ -447,8 +479,9 @@
   }
 
   function resetView(keepInputs){
-    lastCast=[];lastOutputs={};lastGallery=[];lastDetails={};lastIntro='';lastTitleDesc={};lastPoster='';lastTT='';lastVI='';lastAppCardHTML='';lastAppCardJSON={};lastReadyTexts={};lastFullJSON={};lastCanvas=null;
+    lastCast=[];lastOutputs={};lastGallery=[];lastDetails={};lastIntro='';lastTitleDesc={};lastPoster='';lastTT='';lastVI='';lastAppCardHTML='';lastAppCardJSON={};lastReadyTexts={};lastFullJSON={};lastCanvas=null;lastPosterImg=null;
     var ps=$('pngPreviewSec');if(ps)ps.classList.add('hide');
+    var pb=$('pngCardBtn');if(pb){pb.disabled=false;pb.textContent='🖼 کارت PNG';}
     posterBox.innerHTML='کاور';nameBox.textContent='—';metaBox.textContent='کد IMDb را وارد کن';ratingBox.classList.add('hide');ratingBox.querySelector('span').textContent='';
     playerBox.innerHTML='<div class="empty">پخش تیزر</div>';linksBox.innerHTML='';castBox.innerHTML='<span class="chip">—</span>';videosBox.innerHTML='<div class="empty">—</div>';galleryBox.innerHTML='<div class="empty">—</div>';detailsBox.innerHTML='<div class="empty">—</div>';introBox.value='—';titleDescRows.innerHTML='';appCardPreview.innerHTML='<div class="empty">بعد از دریافت اطلاعات، کارت اپلیکیشن ساخته می‌شود</div>';appCardCode.value='—';readyShort.value='—';readyFull.value='—';readyTelegram.value='—';readyInstagram.value='—';readyApp.value='—';
     if(!keepInputs){titleInput.value='';videoInput.value='';clearStatus();titleInput.focus()}
@@ -632,7 +665,9 @@
   function renderMeta(tt,pack,details){
     var m=(pack&&pack.meta)||{};
     var poster=m.poster||m.background||(details.images&&details.images[0])||'';
+    var prevPoster=lastPoster;
     lastPoster=poster||lastPoster;
+    if(lastPoster&&lastPoster!==prevPoster)preloadPoster(lastPoster);
     posterBox.innerHTML=poster?'<img src="'+esc(poster)+'" alt="'+esc((details&&details.title)||m.name||tt)+'">':'کاور پیدا نشد';
     nameBox.textContent=(details&&details.titleFa&&details.titleFa!==details.title)?details.titleFa+' / '+details.title:((details&&details.title)||m.name||tt);
     var bits=[];
@@ -1312,34 +1347,7 @@
       finish();
     }
 
-    function tryLoad(url,cb){
-      // Fetch through proxy → blob URL → Image avoids all canvas CORS taint issues
-      function viaProxy(proxyUrl,fallback){
-        fetch(proxyUrl)
-          .then(function(r){if(!r.ok)throw new Error('err');return r.blob()})
-          .then(function(blob){
-            var bu=URL.createObjectURL(blob);
-            var img=new Image();
-            img.onload=function(){cb(img);URL.revokeObjectURL(bu)};
-            img.onerror=function(){URL.revokeObjectURL(bu);fallback()};
-            img.src=bu;
-          })
-          .catch(fallback);
-      }
-      viaProxy(
-        'https://api.allorigins.win/raw?url='+encodeURIComponent(url),
-        function(){
-          viaProxy(
-            'https://corsproxy.io/?'+encodeURIComponent(url),
-            function(){cb(null)}
-          );
-        }
-      );
-    }
-
-    function doRender(){
-      if(lastPoster)tryLoad(lastPoster,draw);else draw(null);
-    }
+    function doRender(){draw(lastPosterImg);}
 
     document.fonts.load('bold 54px Vazirmatn').then(doRender).catch(doRender);
   }
