@@ -1297,42 +1297,27 @@
       ctx.fillStyle='#e8eaef';ctx.fillRect(IX,SEP,IW,1.5);
       CurY=SEP+22;
 
-      // ── Description ───────────────────────────────────────────────
-      ctx.fillStyle='#0e1221';ctx.font='bold 27px '+F;ctx.textAlign='right';
-      ctx.fillText('خلاصه داستان:',MX+MW-P,CurY);CurY+=42;
-
-      var desc=(lastDetails.descriptionFa||lastDetails.description||lastIntro||'').replace(/\s+/g,' ').trim();
-      if(desc){
-        ctx.fillStyle='#2c3040';ctx.font='21px '+F;ctx.textAlign='right';
-        var remH=MY+MH-P-90-CurY;
-        var dL=Math.min(8,Math.max(3,Math.floor(remH/31)));
-        ctxWrap(ctx,desc,MX+MW-P,CurY,IW,31,dL);
-        CurY+=dL*31+10;
+      // ── Telegram text (without trailer section) ───────────────────
+      var tgFull=(lastReadyTexts&&lastReadyTexts.telegram)||'';
+      var tgCard=tgFull.replace(/\n*━+[\s\S]*/,'').trim();
+      if(tgCard){
+        ctx.fillStyle='#2c3040';ctx.font='20px '+F;ctx.textAlign='right';
+        var lh=29;
+        var maxL=Math.min(16,Math.max(4,Math.floor((MY+MH-P-CurY)/lh)));
+        var drawn=0;
+        tgCard.split('\n').forEach(function(rawLine){
+          if(drawn>=maxL)return;
+          if(!rawLine.trim()){if(drawn>0)CurY+=Math.round(lh*0.3);return;}
+          var words=rawLine.split(' '),line='';
+          words.forEach(function(w){
+            if(drawn>=maxL)return;
+            var t=line?line+' '+w:w;
+            if(ctx.measureText(t).width>IW&&line){ctx.fillText(line,MX+MW-P,CurY);CurY+=lh;drawn++;line=w;}
+            else line=t;
+          });
+          if(drawn<maxL&&line){ctx.fillText(line,MX+MW-P,CurY);CurY+=lh;drawn++;}
+        });
       }
-
-      // Director
-      if(lastDetails.director&&lastDetails.director!=='پیدا نشد'){
-        ctx.fillStyle='#3a3f55';ctx.font='20px '+F;ctx.textAlign='right';
-        ctx.fillText('🎬 کارگردان: '+lastDetails.director,MX+MW-P,CurY);CurY+=30;
-      }
-      // Writer
-      if(lastDetails.writer&&lastDetails.writer!=='پیدا نشد'){
-        ctx.fillStyle='#4a5068';ctx.font='18px '+F;ctx.textAlign='right';
-        ctx.fillText('✍ نویسنده: '+lastDetails.writer,MX+MW-P,CurY);CurY+=26;
-      }
-      // Cast
-      if(lastCast.length){
-        ctx.fillStyle='#555b74';ctx.font='18px '+F;ctx.textAlign='right';
-        ctx.fillText('👥 '+lastCast.slice(0,5).join('،  '),MX+MW-P,CurY);CurY+=26;
-      }
-
-      // ── Bottom bar ─────────────────────────────────────────────────
-      var BY=MY+MH-P;
-      ctx.fillStyle='#e8eaef';ctx.fillRect(IX,BY-34,IW,1);
-      ctx.fillStyle='#aaa';ctx.font='15px '+FS;ctx.textAlign='right';
-      ctx.fillText(lastTT?'imdb.com/title/'+lastTT:'SMDB',MX+MW-P,BY-12);
-      ctx.fillStyle='rgba(245,197,24,0.9)';ctx.font='bold 15px '+FS;ctx.textAlign='left';
-      ctx.fillText('SMDB',IX,BY-12);
 
       finish();
     }
