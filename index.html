@@ -375,13 +375,56 @@
   function downloadAsset(url,filename){
     filename=filename||'download';
     if(!url||/^پیدا نشد|^فعلاً/.test(url)){toast('لینک دانلود پیدا نشد');return}
+    var wantJpg=/\.jpe?g$/i.test(filename);
+    var srcWebp=/\.webp($|\?)/i.test(url);
+
+    function saveBlob(blob,name){
+      var ou=URL.createObjectURL(blob);
+      var a=document.createElement('a');a.href=ou;a.download=name;document.body.appendChild(a);a.click();a.remove();
+      setTimeout(function(){URL.revokeObjectURL(ou)},1500);toast('دانلود شروع شد');
+    }
+    function convertToJpg(blob){
+      var bu=URL.createObjectURL(blob);
+      var img=new Image();
+      img.onload=function(){
+        var cv=document.createElement('canvas');cv.width=img.naturalWidth;cv.height=img.naturalHeight;
+        cv.getContext('2d').drawImage(img,0,0);
+        URL.revokeObjectURL(bu);
+        cv.toBlob(function(jpgBlob){
+          if(jpgBlob)saveBlob(jpgBlob,filename);else saveBlob(blob,filename);
+        },'image/jpeg',0.92);
+      };
+      img.onerror=function(){URL.revokeObjectURL(bu);saveBlob(blob,filename);};
+      img.src=bu;
+    }
+
+    // WebP URL + want JPG → fetch via proxy then convert
+    if(srcWebp&&wantJpg){
+      toast('در حال تبدیل WebP به JPG...');
+      var pList=[
+        'https://api.allorigins.win/raw?url='+encodeURIComponent(url),
+        'https://corsproxy.io/?'+encodeURIComponent(url),
+        'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(url)
+      ];
+      function tryProxy(i){
+        if(i>=pList.length){
+          var a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();a.remove();
+          toast('تبدیل ناموفق، لینک اصلی باز شد');return;
+        }
+        fetch(pList[i]).then(function(r){if(!r.ok)throw new Error('bad');return r.blob();})
+        .then(function(blob){convertToJpg(blob);})
+        .catch(function(){tryProxy(i+1);});
+      }
+      tryProxy(0);return;
+    }
+
+    // Standard fetch
     fetch(url,{mode:'cors'}).then(function(res){
-      if(!res.ok)throw new Error('blocked');
-      return res.blob();
+      if(!res.ok)throw new Error('blocked');return res.blob();
     }).then(function(blob){
-      var objectUrl=URL.createObjectURL(blob);
-      var a=document.createElement('a');a.href=objectUrl;a.download=filename;document.body.appendChild(a);a.click();a.remove();
-      setTimeout(function(){URL.revokeObjectURL(objectUrl)},1500);toast('دانلود شروع شد');
+      // URL may not end in .webp but server returns webp content
+      if(wantJpg&&blob.type==='image/webp'){convertToJpg(blob);}
+      else saveBlob(blob,filename);
     }).catch(function(){
       var a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener';a.download=filename;document.body.appendChild(a);a.click();a.remove();toast('اگر دانلود نشد، لینک باز شد');
     });
