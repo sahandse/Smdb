@@ -76,6 +76,11 @@
     .srInfo b{display:block;font-size:12px;line-height:1.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px}.srInfo span{font-size:11px;color:var(--muted)}
     @media(max-width:900px){.srGrid{grid-template-columns:repeat(2,1fr)}}
     @media(max-width:480px){.srGrid{grid-template-columns:1fr}}
+    .tgQuickRow{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+    .tgQuickInput{flex:1;min-width:130px;background:#090b10;border:1px solid #2b3442;color:#fff;border-radius:13px;padding:9px 11px;outline:0;font:inherit}
+    .pngPreviewImg{max-width:100%;border-radius:18px;border:1px solid var(--line);box-shadow:var(--shadow);display:block;margin:0 auto}
+    .tplTextarea{width:100%;min-height:140px;background:#090b10;color:#e5e7eb;border:1px solid #272e3a;border-radius:13px;padding:10px;resize:vertical;line-height:1.85;font-size:12px;outline:0;direction:rtl;text-align:right}
+    .tplVars{font-size:11px;color:var(--muted);line-height:2;margin:7px 0;direction:ltr;text-align:left;word-break:break-all}
   </style>
 </head>
 <body>
@@ -160,19 +165,52 @@
           <div class="readyCard"><label>متن اپلیکیشن <button class="btn small" data-copy-ready="app">کپی</button></label><textarea id="readyApp" readonly>—</textarea></div>
         </div>
 
+        <div style="margin-top:10px;text-align:left">
+          <button class="btn dark small" onclick="$('templateSec').classList.toggle('hide')">⚙ قالب متن سفارشی</button>
+        </div>
+        <div class="section hide" id="templateSec" style="margin-top:10px;background:#0d1016;border-color:#1e2530">
+          <div class="sectionHead">
+            <h2>قالب متن سفارشی</h2>
+            <div class="actions">
+              <button class="btn small" id="tplSaveBtn">ذخیره قالب‌ها</button>
+              <button class="btn bad small" id="tplResetBtn">بازنشانی</button>
+            </div>
+          </div>
+          <div class="tplVars">{title}  {title_en}  {year}  {genre}  {director}  {writer}  {cast}  {cast10}  {rating}  {votes}  {type}  {runtime}  {country}  {language}  {age_rating}  {description}  {mp4}</div>
+          <div style="display:grid;gap:10px">
+            <div class="readyCard">
+              <label>قالب تلگرام <button class="btn small" id="tplTgClearBtn">پاک کردن</button></label>
+              <textarea id="tplTelegram" class="tplTextarea" placeholder="خالی = قالب پیش‌فرض استفاده می‌شود"></textarea>
+            </div>
+            <div class="readyCard">
+              <label>قالب اینستاگرام <button class="btn small" id="tplIgClearBtn">پاک کردن</button></label>
+              <textarea id="tplInstagram" class="tplTextarea" placeholder="خالی = قالب پیش‌فرض استفاده می‌شود"></textarea>
+            </div>
+          </div>
+        </div>
+
         <div class="telegramPanel" id="telegramSendSec">
           <div class="sectionHead">
-            <h3>انتشار تلگرام</h3>
-            <span class="tgStatus" id="tgStatus">تنظیمات توکن بررسی نشده</span>
+            <h3>📢 انتشار تلگرام</h3>
+            <span class="tgStatus" id="tgStatus">بررسی نشده</span>
           </div>
-          <div class="tgActions">
-            <button class="btn small" id="tgSendAllBtn">انتشار کامل</button>
-            <button class="btn small" id="tgSendPhotoBtn">عکس + توضیحات</button>
-            <button class="btn small" id="tgSendVideoBtn">تیزر / لینک تیزر</button>
-            <button class="btn dark small" id="tgOpenShareBtn">Share تلگرام</button>
-            <a class="btn dark small" href="#tokenSec">تنظیمات توکن</a>
+          <div id="tgQuickForm" class="hide">
+            <p class="tgHint" style="margin:6px 0 5px">برای ارسال سریع، توکن و Chat ID را وارد کن:</p>
+            <div class="tgQuickRow">
+              <input id="tgQuickToken" type="password" placeholder="Bot Token: 123456:ABC..." class="tgQuickInput" autocomplete="off">
+              <input id="tgQuickChatId" placeholder="Chat ID: @channel" class="tgQuickInput" autocomplete="off">
+              <button class="btn small" id="tgQuickSaveBtn">ذخیره</button>
+            </div>
           </div>
-          <p class="tgHint">تنظیمات توکن در بخش جداگانه «توکن و تنظیمات تلگرام» قرار دارد.</p>
+          <div style="margin-top:10px">
+            <button class="btn fullMobile" id="tgSendAllBtn" style="width:100%;padding:14px;font-size:15px;margin-bottom:8px">📤 ارسال همه</button>
+            <div class="tgActions">
+              <button class="btn dark small" id="tgSendPhotoBtn">📷 عکس</button>
+              <button class="btn dark small" id="tgSendVideoBtn">🎥 تیزر</button>
+              <button class="btn dark small" id="tgOpenShareBtn">🔗 Share</button>
+              <a class="btn dark small" href="#tokenSec">⚙ تنظیمات</a>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -226,6 +264,17 @@
         </div>
       </div>
 
+      <div class="section hide" id="pngPreviewSec">
+        <div class="sectionHead">
+          <h2>پیش‌نمایش کارت PNG</h2>
+          <div class="actions">
+            <button class="btn" id="pngDownloadBtn">💾 دانلود PNG</button>
+            <button class="btn dark small" id="pngPreviewCloseBtn">✕ بستن</button>
+          </div>
+        </div>
+        <img id="pngPreviewImg" class="pngPreviewImg" alt="پیش‌نمایش کارت PNG">
+      </div>
+
       <div class="section" id="outputsSec">
         <div class="sectionHead"><h2>خروجی‌ها</h2><button class="btn dark small" id="copyAllBtn">کپی همه</button></div>
         <div class="rows" id="links"></div>
@@ -262,7 +311,7 @@
   var $ = function(id){ return document.getElementById(id); };
   var titleInput=$('titleInput'), videoInput=$('videoInput'), statusBox=$('status'), posterBox=$('poster'), nameBox=$('name'), metaBox=$('meta'), ratingBox=$('rating'), playerBox=$('player'), linksBox=$('links'), castBox=$('cast'), videosBox=$('videos'), galleryBox=$('gallery'), detailsBox=$('details'), introBox=$('introText'), titleDescRows=$('titleDescRows'), appCardPreview=$('appCardPreview'), appCardCode=$('appCardCode'), readyShort=$('readyShort'), readyFull=$('readyFull'), readyTelegram=$('readyTelegram'), readyInstagram=$('readyInstagram'), readyApp=$('readyApp');
   var tgBotToken=$('tgBotToken'), tgChatId=$('tgChatId'), tgSaveSettings=$('tgSaveSettings'), tgSendMode=$('tgSendMode'), tgEndpoint=$('tgEndpoint'), tgSendPhotoFirst=$('tgSendPhotoFirst'), tgSendTrailerAfter=$('tgSendTrailerAfter'), tgFallbackEmbed=$('tgFallbackEmbed'), tgStatus=$('tgStatus');
-  var lastCast=[], lastOutputs={}, lastGallery=[], lastDetails={}, lastIntro='', lastTitleDesc={}, lastPoster='', lastTT='', lastVI='', lastAppCardHTML='', lastAppCardJSON={}, lastReadyTexts={}, lastFullJSON={};
+  var lastCast=[], lastOutputs={}, lastGallery=[], lastDetails={}, lastIntro='', lastTitleDesc={}, lastPoster='', lastTT='', lastVI='', lastAppCardHTML='', lastAppCardJSON={}, lastReadyTexts={}, lastFullJSON={}, lastCanvas=null;
 
   var proxies = [
     function(url){ return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url); },
@@ -306,8 +355,10 @@
     var hasChat=!!tgChatId.value.trim();
     var mode=tgSendMode?tgSendMode.value:'direct';
     var hasToken=!!tgBotToken.value.trim();
-    if(mode==='server')tgStatus.textContent=hasChat?'حالت PHP فعال است':'Chat ID وارد نشده';
-    else tgStatus.textContent=(hasToken&&hasChat)?'توکن آماده است':'توکن/Chat ID ناقص است';
+    var ready=(mode==='server'&&hasChat)||(mode!=='server'&&hasToken&&hasChat);
+    if(mode==='server')tgStatus.textContent=hasChat?'✅ PHP':'⚠ Chat ID ناقص';
+    else tgStatus.textContent=ready?'✅ آماده':'⚠ توکن ناقص';
+    var qf=$('tgQuickForm');if(qf)qf.classList.toggle('hide',ready);
   }
   function loadTelegramSettings(){
     try{
@@ -396,7 +447,8 @@
   }
 
   function resetView(keepInputs){
-    lastCast=[];lastOutputs={};lastGallery=[];lastDetails={};lastIntro='';lastTitleDesc={};lastPoster='';lastTT='';lastVI='';lastAppCardHTML='';lastAppCardJSON={};lastReadyTexts={};lastFullJSON={};
+    lastCast=[];lastOutputs={};lastGallery=[];lastDetails={};lastIntro='';lastTitleDesc={};lastPoster='';lastTT='';lastVI='';lastAppCardHTML='';lastAppCardJSON={};lastReadyTexts={};lastFullJSON={};lastCanvas=null;
+    var ps=$('pngPreviewSec');if(ps)ps.classList.add('hide');
     posterBox.innerHTML='کاور';nameBox.textContent='—';metaBox.textContent='کد IMDb را وارد کن';ratingBox.classList.add('hide');ratingBox.querySelector('span').textContent='';
     playerBox.innerHTML='<div class="empty">پخش تیزر</div>';linksBox.innerHTML='';castBox.innerHTML='<span class="chip">—</span>';videosBox.innerHTML='<div class="empty">—</div>';galleryBox.innerHTML='<div class="empty">—</div>';detailsBox.innerHTML='<div class="empty">—</div>';introBox.value='—';titleDescRows.innerHTML='';appCardPreview.innerHTML='<div class="empty">بعد از دریافت اطلاعات، کارت اپلیکیشن ساخته می‌شود</div>';appCardCode.value='—';readyShort.value='—';readyFull.value='—';readyTelegram.value='—';readyInstagram.value='—';readyApp.value='—';
     if(!keepInputs){titleInput.value='';videoInput.value='';clearStatus();titleInput.focus()}
@@ -658,6 +710,47 @@
     buildFullJSON();
   }
 
+  function applyTemplate(tpl,details){
+    var mp4=lastOutputs&&lastOutputs.mp4?lastOutputs.mp4:'';
+    var vars={
+      '{title}':details.titleFa||details.title||'','{title_en}':details.title||'',
+      '{year}':details.year&&details.year!=='پیدا نشد'?details.year:'',
+      '{genre}':details.genre&&details.genre!=='پیدا نشد'?details.genre:'',
+      '{director}':details.director&&details.director!=='پیدا نشد'?details.director:'',
+      '{writer}':details.writer&&details.writer!=='پیدا نشد'?details.writer:'',
+      '{cast}':(details.cast||[]).slice(0,7).join('، '),'{cast10}':(details.cast||[]).slice(0,10).join('، '),
+      '{rating}':String(details.rating||''),'{votes}':details.votes?Number(details.votes).toLocaleString():'',
+      '{type}':details.type&&details.type!=='—'?details.type:'',
+      '{runtime}':details.runtime&&details.runtime!=='پیدا نشد'?details.runtime:'',
+      '{country}':details.country&&details.country!=='پیدا نشد'?details.country:'',
+      '{language}':details.language&&details.language!=='پیدا نشد'?details.language:'',
+      '{age_rating}':details.ageRating&&details.ageRating!=='پیدا نشد'?details.ageRating:'',
+      '{description}':details.descriptionFa||details.description||'','{mp4}':mp4
+    };
+    return tpl.replace(/\{[a-z_0-9]+\}/g,function(k){return k in vars?vars[k]:k});
+  }
+  function loadTemplates(){
+    var tt=localStorage.getItem('smdb_tg_tpl')||'';
+    var it=localStorage.getItem('smdb_ig_tpl')||'';
+    var te=$('tplTelegram');if(te)te.value=tt;
+    var ie=$('tplInstagram');if(ie)ie.value=it;
+  }
+  function saveTemplates(){
+    var tt=($('tplTelegram')||{}).value||'';
+    var it=($('tplInstagram')||{}).value||'';
+    if(tt)localStorage.setItem('smdb_tg_tpl',tt);else localStorage.removeItem('smdb_tg_tpl');
+    if(it)localStorage.setItem('smdb_ig_tpl',it);else localStorage.removeItem('smdb_ig_tpl');
+    toast('قالب‌ها ذخیره شدند');
+    if(lastDetails&&lastDetails.title)renderReadyTexts(lastDetails);
+  }
+  function resetTemplates(){
+    localStorage.removeItem('smdb_tg_tpl');localStorage.removeItem('smdb_ig_tpl');
+    var te=$('tplTelegram');if(te)te.value='';
+    var ie=$('tplInstagram');if(ie)ie.value='';
+    toast('قالب‌ها بازنشانی شدند');
+    if(lastDetails&&lastDetails.title)renderReadyTexts(lastDetails);
+  }
+
   function buildReadyTexts(details){
     var title=details.titleFa||details.title||'این فیلم';
     var en=details.title&&details.title!==title?details.title:'';
@@ -734,6 +827,10 @@
     var instagram=igLines.join('\n');
 
     var app=title+(year?' • '+year:'')+(details.rating?' • ⭐ '+details.rating:'')+'\n'+truncateText(desc||full,220);
+    var tgTpl=localStorage.getItem('smdb_tg_tpl');
+    var igTpl=localStorage.getItem('smdb_ig_tpl');
+    if(tgTpl)telegram=applyTemplate(tgTpl,details);
+    if(igTpl)instagram=applyTemplate(igTpl,details);
     return{short:short,full:full,telegram:telegram,instagram:instagram,app:app};
   }
   function renderReadyTexts(details){
@@ -1002,9 +1099,37 @@
   $('tgSendAllBtn').addEventListener('click',sendTelegramAll);
   $('tgOpenShareBtn').addEventListener('click',telegramShareUrl);
   loadTelegramSettings();
+  loadTemplates();
   titleInput.addEventListener('keydown',function(e){if(e.key==='Enter')find()});
   videoInput.addEventListener('keydown',function(e){if(e.key==='Enter')find()});
   $('pngCardBtn').addEventListener('click',generatePngCard);
+  // Feature 5: PNG preview + download
+  $('pngDownloadBtn').addEventListener('click',function(){
+    if(!lastCanvas){toast('ابتدا کارت را بساز');return}
+    lastCanvas.toBlob(function(blob){
+      var url=URL.createObjectURL(blob),a=document.createElement('a');
+      a.href=url;a.download='smdb-'+(lastTT||'card')+'.png';
+      document.body.appendChild(a);a.click();a.remove();
+      setTimeout(function(){URL.revokeObjectURL(url)},1500);toast('دانلود شروع شد');
+    },'image/png');
+  });
+  $('pngPreviewCloseBtn').addEventListener('click',function(){var s=$('pngPreviewSec');if(s)s.classList.add('hide')});
+  // Feature 6: Quick Telegram setup
+  $('tgQuickSaveBtn').addEventListener('click',function(){
+    var qt=$('tgQuickToken').value.trim();
+    var qc=$('tgQuickChatId').value.trim();
+    if(!qt&&!qc){toast('توکن یا Chat ID وارد نشده');return}
+    if(qt)tgBotToken.value=qt;
+    if(qc)tgChatId.value=qc;
+    tgSaveSettings.checked=true;
+    saveTelegramSettings();
+    toast('تنظیمات تلگرام ذخیره شد');
+  });
+  // Feature 3: Custom templates
+  $('tplSaveBtn').addEventListener('click',saveTemplates);
+  $('tplResetBtn').addEventListener('click',resetTemplates);
+  $('tplTgClearBtn').addEventListener('click',function(){var e=$('tplTelegram');if(e)e.value='';localStorage.removeItem('smdb_tg_tpl');if(lastDetails&&lastDetails.title)renderReadyTexts(lastDetails);toast('قالب تلگرام پاک شد')});
+  $('tplIgClearBtn').addEventListener('click',function(){var e=$('tplInstagram');if(e)e.value='';localStorage.removeItem('smdb_ig_tpl');if(lastDetails&&lastDetails.title)renderReadyTexts(lastDetails);toast('قالب اینستاگرام پاک شد')});
 
   // ── PNG Card Generator ─────────────────────────────────────────────────
   function drawRRect(ctx,x,y,w,h,r){
@@ -1033,12 +1158,10 @@
     var F='Vazirmatn,Tahoma,Arial';
 
     function finish(){
-      canvas.toBlob(function(blob){
-        var url=URL.createObjectURL(blob),a=document.createElement('a');
-        a.href=url;a.download='smdb-'+(lastTT||'card')+'.png';
-        document.body.appendChild(a);a.click();a.remove();
-        setTimeout(function(){URL.revokeObjectURL(url)},1500);toast('کارت PNG آماده شد ✓');
-      },'image/png');
+      lastCanvas=canvas;
+      var img=$('pngPreviewImg');if(img)img.src=canvas.toDataURL('image/png');
+      var sec=$('pngPreviewSec');if(sec){sec.classList.remove('hide');setTimeout(function(){sec.scrollIntoView({behavior:'smooth',block:'nearest'})},80)}
+      toast('کارت PNG آماده ✓');
     }
 
     function draw(img){
