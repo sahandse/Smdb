@@ -1222,9 +1222,8 @@
       var P=38,IW=MW-P*2,IX=MX+P;
 
       // ── Poster (top-right) ────────────────────────────────────────
-      var PW=306,PH=459,PX=MX+MW-P-PW,PY=MY+P;
-      var hasPoster=!!pi;
-      if(hasPoster){
+      var PW=300,PH=450,PX=MX+MW-P-PW,PY=MY+P;
+      if(pi){
         ctx.save();drawRRect(ctx,PX,PY,PW,PH,14);ctx.clip();
         var ps=Math.max(PW/pi.width,PH/pi.height);
         ctx.drawImage(pi,PX+(PW-pi.width*ps)/2,PY+(PH-pi.height*ps)/2,pi.width*ps,pi.height*ps);
@@ -1232,9 +1231,9 @@
         ctx.strokeStyle='rgba(245,197,24,0.3)';ctx.lineWidth=1.5;drawRRect(ctx,PX,PY,PW,PH,14);ctx.stroke();
       }
 
-      // ── Text column (full width if no poster, else left of poster) ─
-      var TW=hasPoster?IW-PW-22:IW;
-      var TR=hasPoster?PX-16:MX+MW-P;
+      // ── Left title column (top-left, beside poster) ───────────────
+      var TW=pi?IW-PW-22:IW;
+      var TR=pi?PX-16:MX+MW-P;
       var CurY=MY+P;
 
       // SMDB badge
@@ -1258,23 +1257,27 @@
       // English title
       if(lastDetails.title&&lastDetails.title!==faTitle){
         ctx.fillStyle='#606880';ctx.font='21px '+FS;ctx.textAlign='left';
-        var enT=lastDetails.title.length>36?lastDetails.title.slice(0,35)+'…':lastDetails.title;
-        ctx.fillText(enT,IX,CurY);CurY+=32;
+        var enT=lastDetails.title.length>30?lastDetails.title.slice(0,29)+'…':lastDetails.title;
+        ctx.fillText(enT,IX,CurY);
       }
-      CurY+=8;
 
-      // IMDb rating badge
+      // ── Separator 1: always at bottom of poster (poster is the anchor) ─
+      var SEP1=PY+PH+22;
+      ctx.fillStyle='rgba(255,255,255,0.07)';ctx.fillRect(IX,SEP1,IW,1);
+      CurY=SEP1+20;
+
+      // ── IMDb rating + meta (full width, below poster) ─────────────
       if(lastDetails.rating){
-        var RX=IX,RY=CurY,RW=132,RH=48;
+        var RX=IX,RY=CurY,RW=128,RH=48;
         ctx.fillStyle='#f5c518';drawRRect(ctx,RX,RY,RW,RH,11);ctx.fill();
-        ctx.fillStyle='#111';ctx.font='bold 27px '+FS;ctx.textAlign='center';
-        ctx.fillText(lastDetails.rating,RX+RW/2,RY+30);
-        ctx.font='bold 11px '+FS;ctx.fillText('IMDb',RX+RW/2,RY+45);
+        ctx.fillStyle='#111';ctx.font='bold 26px '+FS;ctx.textAlign='center';
+        ctx.fillText(lastDetails.rating,RX+RW/2,RY+29);
+        ctx.font='bold 11px '+FS;ctx.fillText('IMDb',RX+RW/2,RY+44);
         if(lastDetails.votes){
-          ctx.fillStyle='#8087a0';ctx.font='14px '+F;ctx.textAlign='right';
-          ctx.fillText(Number(lastDetails.votes).toLocaleString()+' رأی',TR,RY+26);
+          ctx.fillStyle='#8087a0';ctx.font='14px '+F;ctx.textAlign='left';
+          ctx.fillText(Number(lastDetails.votes).toLocaleString()+' رأی',RX+RW+14,RY+24);
         }
-        CurY+=RH+13;
+        CurY+=RH+12;
       }
 
       // Meta pills: year | country | runtime
@@ -1297,7 +1300,7 @@
       // Genre + Type pills
       var gp=[];
       if(lastDetails.type&&lastDetails.type!=='—')gp.push(lastDetails.type);
-      (lastDetails.genre||'').split('،').slice(0,3).forEach(function(g){var t=g.trim();if(t&&t!=='پیدا نشد')gp.push(t)});
+      (lastDetails.genre||'').split('،').slice(0,4).forEach(function(g){var t=g.trim();if(t&&t!=='پیدا نشد')gp.push(t)});
       if(gp.length){
         var gx=IX,gy=CurY,gh=27;
         gp.forEach(function(g){
@@ -1320,10 +1323,10 @@
         CurY+=arh+8;
       }
 
-      // ── Separator (below poster or info, whichever is lower) ──────
-      var SEP=Math.max(PY+(hasPoster?PH:0)+22,CurY+16);
-      ctx.fillStyle='rgba(255,255,255,0.07)';ctx.fillRect(IX,SEP,IW,1);
-      CurY=SEP+20;
+      // ── Separator 2 ───────────────────────────────────────────────
+      CurY+=6;
+      ctx.fillStyle='rgba(255,255,255,0.07)';ctx.fillRect(IX,CurY,IW,1);
+      CurY+=18;
 
       // ── Telegram text (no trailer section) ────────────────────────
       var tgFull=(lastReadyTexts&&lastReadyTexts.telegram)||'';
