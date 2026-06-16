@@ -1313,15 +1313,28 @@
     }
 
     function tryLoad(url,cb){
-      var img=new Image();img.crossOrigin='anonymous';
-      img.onload=function(){cb(img)};
-      img.onerror=function(){
-        var img2=new Image();img2.crossOrigin='anonymous';
-        img2.onload=function(){cb(img2)};
-        img2.onerror=function(){cb(null)};
-        img2.src='https://api.allorigins.win/raw?url='+encodeURIComponent(url);
-      };
-      img.src=url;
+      // Fetch through proxy → blob URL → Image avoids all canvas CORS taint issues
+      function viaProxy(proxyUrl,fallback){
+        fetch(proxyUrl)
+          .then(function(r){if(!r.ok)throw new Error('err');return r.blob()})
+          .then(function(blob){
+            var bu=URL.createObjectURL(blob);
+            var img=new Image();
+            img.onload=function(){cb(img);URL.revokeObjectURL(bu)};
+            img.onerror=function(){URL.revokeObjectURL(bu);fallback()};
+            img.src=bu;
+          })
+          .catch(fallback);
+      }
+      viaProxy(
+        'https://api.allorigins.win/raw?url='+encodeURIComponent(url),
+        function(){
+          viaProxy(
+            'https://corsproxy.io/?'+encodeURIComponent(url),
+            function(){cb(null)}
+          );
+        }
+      );
     }
 
     function doRender(){
