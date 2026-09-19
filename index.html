@@ -333,13 +333,16 @@
   var $ = function(id){ return document.getElementById(id); };
   var titleInput=$('titleInput'), videoInput=$('videoInput'), statusBox=$('status'), posterBox=$('poster'), nameBox=$('name'), metaBox=$('meta'), ratingBox=$('rating'), playerBox=$('player'), linksBox=$('links'), castBox=$('cast'), videosBox=$('videos'), galleryBox=$('gallery'), detailsBox=$('details'), introBox=$('introText'), titleDescRows=$('titleDescRows'), appCardPreview=$('appCardPreview'), appCardCode=$('appCardCode'), readyShort=$('readyShort'), readyFull=$('readyFull'), readyTelegram=$('readyTelegram'), readyInstagram=$('readyInstagram'), readyApp=$('readyApp');
   var tgBotToken=$('tgBotToken'), tgChatId=$('tgChatId'), tgSaveSettings=$('tgSaveSettings'), tgSendMode=$('tgSendMode'), tgEndpoint=$('tgEndpoint'), tgSendPhotoFirst=$('tgSendPhotoFirst'), tgSendTrailerAfter=$('tgSendTrailerAfter'), tgFallbackEmbed=$('tgFallbackEmbed'), tgStatus=$('tgStatus');
+  var searchToken=0;   // a slow lookup must not paint over the search that replaced it
   var lastCast=[], lastOutputs={}, lastGallery=[], lastDetails={}, lastIntro='', lastTitleDesc={}, lastPoster='', lastTT='', lastVI='', lastAppCardHTML='', lastAppCardJSON={}, lastReadyTexts={}, lastFullJSON={}, lastCanvas=null, lastPosterImg=null;
 
+  // Each entry builds a proxied URL; parse() is for proxies that wrap the body in JSON.
   var proxies = [
-    function(url){ return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url); },
-    function(url){ return 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url); },
-    function(url){ return 'https://corsproxy.io/?' + encodeURIComponent(url); },
-    function(url){ return 'https://thingproxy.freeboard.io/fetch/' + url; }
+    { url: function(url){ return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url); } },
+    { url: function(url){ return 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url); } },
+    { url: function(url){ return 'https://corsproxy.io/?url=' + encodeURIComponent(url); } },
+    { url: function(url){ return 'https://api.allorigins.win/get?url=' + encodeURIComponent(url); },
+      parse: function(body){ try{ return (JSON.parse(body)||{}).contents||'' }catch(e){ return '' } } }
   ];
 
   function preloadPoster(url){
@@ -349,7 +352,7 @@
     if(btn){btn.disabled=true;btn.textContent='⏳ بارگذاری کاور...';}
     var proxyUrls=[
       'https://api.allorigins.win/raw?url='+encodeURIComponent(url),
-      'https://corsproxy.io/?'+encodeURIComponent(url),
+      'https://corsproxy.io/?url='+encodeURIComponent(url),
       'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(url)
     ];
     function tryNext(i){
@@ -420,7 +423,7 @@
       toast('در حال تبدیل WebP به JPG...');
       var pList=[
         'https://api.allorigins.win/raw?url='+encodeURIComponent(url),
-        'https://corsproxy.io/?'+encodeURIComponent(url),
+        'https://corsproxy.io/?url='+encodeURIComponent(url),
         'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(url)
       ];
       function tryProxy(i){
@@ -606,20 +609,49 @@
       return res.json();
     });
   }
+  var FETCH_TIMEOUT=15000;
+  // Without a deadline a hung proxy leaves the whole lookup spinning forever.
+  function fetchWithTimeout(url,opts,ms){
+    opts=opts||{};
+    if(typeof AbortController!=='function')return fetch(url,opts);
+    var ctl=new AbortController(),timedOut=false;
+    var timer=setTimeout(function(){timedOut=true;ctl.abort()},ms||FETCH_TIMEOUT);
+    return fetch(url,Object.assign({},opts,{signal:ctl.signal})).then(function(res){
+      clearTimeout(timer);return res;
+    },function(e){clearTimeout(timer);throw timedOut?new Error('timeout'):e});
+  }
+  // A proxy can answer 200 with its own error page, which used to be accepted as the real page and
+  // then silently yielded no video at all.
+  function looksLikePage(url,text){
+    if(!text||text.length<400)return false;
+    if(!/[<{]/.test(text))return false;
+    if(/imdb\.com\//i.test(url)&&!/imdb/i.test(text))return false;
+    return true;
+  }
+  // The same IMDb title page is asked for by the details, video and gallery steps; without this the
+  // free proxies see three identical hits per search and start rate-limiting the video one.
+  var textCache={};
+  function clearTextCache(){textCache={}}
   function fetchTextAny(url){
-    var tries=[url].concat(proxies.map(function(p){return p(url)}));
+    if(textCache[url])return textCache[url];
+    var tries=[{url:function(u){return u}}].concat(proxies);
     var lastErr;
     function tryNext(i){
       if(i>=tries.length)return Promise.reject(lastErr||new Error('fetch failed'));
-      return fetch(tries[i],{headers:{Accept:'text/html,application/xhtml+xml,*/*;q=0.8'}}).then(function(res){
-        if(res.ok)return res.text().then(function(t){
-          if(t&&t.length>80)return t;
-          throw new Error('empty');
-        });
-        throw new Error('HTTP '+res.status);
+      var via=tries[i];
+      return fetchWithTimeout(via.url(url),{headers:{Accept:'text/html,application/xhtml+xml,*/*;q=0.8'}}).then(function(res){
+        if(!res.ok)throw new Error('HTTP '+res.status);
+        return res.text();
+      }).then(function(body){
+        var text=via.parse?via.parse(body):body;
+        if(!looksLikePage(url,text))throw new Error('bad body');
+        return text;
       }).catch(function(e){lastErr=e;return tryNext(i+1)});
     }
-    return tryNext(0);
+    var p=tryNext(0);
+    textCache[url]=p;
+    p.catch(function(){if(textCache[url]===p)delete textCache[url]});
+    return p;
   }
 
   function getMeta(tt){
@@ -964,47 +996,99 @@
     var fetches=urls.map(function(url){return fetchTextAny(url).then(function(text){images=images.concat(extractImages(text))}).catch(function(){})});
     return Promise.all(fetches).then(function(){return uniq(images,function(x){return x}).slice(0,14)});
   }
-  function extractMP4(text){
+  function extractMP4(text,vi){
     var t=normalizeText(text),urls=[],m;
     var re=/https?:\/\/[^\s"'<>\\]+?\.mp4(?:\?[^\s"'<>\\]*)?/g;
     while((m=re.exec(t))!==null)urls.push(htmlDecode(m[0]));
-    return urls.find(function(u){return/1080|720|h264|main|high|progressive/i.test(u)})||urls[0]||'';
+    urls=uniq(urls,function(x){return x});
+    // An embed page also ships the playback files of the videos queued after this one, and picking
+    // the first 1080p hit on the page could hand back a completely different video. IMDb's CDN path
+    // carries the video id, so keep the files that really belong to the id we asked for.
+    if(vi){
+      var own=urls.filter(function(u){return u.toLowerCase().indexOf(vi.toLowerCase())>=0});
+      if(own.length)urls=own;
+    }
+    function rank(u){
+      if(/1080/.test(u))return 4;
+      if(/720/.test(u))return 3;
+      if(/480/.test(u))return 2;
+      if(/h264|progressive|main|high/i.test(u))return 1;
+      return 0;
+    }
+    urls.sort(function(a,b){return rank(b)-rank(a)});
+    return urls[0]||'';
   }
   function extractTitle(text){
     var t=normalizeText(text);
     return htmlDecode(((t.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)/i)||[])[1])||((t.match(/<title[^>]*>([^<]+)/i)||[])[1])||'').trim();
   }
-  function extractTT(text){return getTT(normalizeText(text))}
+  function extractTTs(text){
+    var t=normalizeText(text),out=[],m,re=/\b(tt\d{6,12})\b/ig;
+    while((m=re.exec(t))!==null)out.push(m[1].toLowerCase());
+    return uniq(out,function(x){return x});
+  }
+  // Which title a video page belongs to. Only the explicit fields are trusted — the first /title/tt
+  // link on the page is just as likely to be a nav or recommendation item.
+  function extractOwnerTT(text){
+    var t=normalizeText(text);
+    var m=t.match(/["'](?:primaryTitle|title)["']\s*:\s*\{[^{}]*?["']id["']\s*:\s*["'](tt\d{6,12})/i)
+        ||t.match(/["']titleI[dD]["']?\s*[:=]\s*["'](tt\d{6,12})/i)
+        ||t.match(/<link[^>]+rel=["']canonical["'][^>]+\/title\/(tt\d{6,12})/i);
+    return m?m[1].toLowerCase():'';
+  }
+  // Tier 0 = a real /video/vi… link, tier 1 = an explicit videoId field, tier 2 = a bare id found
+  // anywhere on the page. Tier 2 also picks up the ids of the "More like this" rail, so it is kept
+  // as a last resort and must never outrank the other two.
   function extractVIs(text){
     var t=normalizeText(text),found=[],m;
-    var regs=[/\/video\/(vi\d{5,16})/ig,/videoId["']?\s*[:=]\s*["'](vi\d{5,16})/ig,/(vi\d{5,16})/ig];
-    for(var ri=0;ri<regs.length;ri++){while((m=regs[ri].exec(t))!==null)found.push(m[1].toLowerCase())}
-    return uniq(found,function(x){return x});
+    var regs=[/\/video\/(vi\d{5,16})/ig,/["']?video(?:Id|_id)["']?\s*[:=]\s*["'](vi\d{5,16})/ig,/\b(vi\d{5,16})\b/ig];
+    for(var ri=0;ri<regs.length;ri++){while((m=regs[ri].exec(t))!==null)found.push({vi:m[1].toLowerCase(),tier:ri})}
+    return uniq(found,function(x){return x.vi});
   }
-  function scoreVI(text,vi,metaName){
-    var t=normalizeText(text).toLowerCase(),idx=t.indexOf(vi.toLowerCase());if(idx<0)return 0;
-    var snip=t.slice(Math.max(0,idx-900),idx+900),s=1;
-    if(/trailer|official trailer/.test(snip))s+=10;if(/teaser|promo|clip/.test(snip))s+=5;if(/featurette|interview|behind the scenes|bts/.test(snip))s-=4;
-    if(metaName){(metaName.toLowerCase().split(/\s+/).filter(function(x){return x.length>2})).forEach(function(part){if(snip.includes(part))s+=1})}
+  function scoreVI(text,cand,metaName){
+    var t=normalizeText(text).toLowerCase(),idx=t.indexOf(cand.vi);if(idx<0)return 0;
+    // IMDb packs every video of the page into one JSON blob. A ±900 char window spanned several
+    // entries, so a neighbour's "trailer" label leaked onto the wrong id — keep it tight.
+    var snip=t.slice(Math.max(0,idx-260),idx+260);
+    var s=cand.tier===0?12:(cand.tier===1?8:1);
+    if(/official trailer/.test(snip))s+=14;else if(/\btrailer\b/.test(snip))s+=10;
+    if(/\bteaser\b/.test(snip))s+=6;
+    if(/\bpromo\b|\bclip\b/.test(snip))s+=3;
+    if(/featurette|interview|behind the scenes|\bbts\b|deleted scene|blooper/.test(snip))s-=8;
+    if(metaName){(metaName.toLowerCase().split(/\s+/).filter(function(x){return x.length>2})).forEach(function(part){if(snip.indexOf(part)>=0)s+=1})}
     return s;
   }
-  function findIMDbVI(tt,metaName){
-    var urls=['https://www.imdb.com/title/'+tt+'/videogallery/','https://www.imdb.com/title/'+tt+'/','https://www.imdb.com/title/'+tt+'/videos/'];
+  function findIMDbVIs(tt,metaName){
+    // /videos/ is the live path; /videogallery/ was retired by IMDb, so it goes last.
+    var urls=['https://www.imdb.com/title/'+tt+'/videos/','https://www.imdb.com/title/'+tt+'/','https://www.imdb.com/title/'+tt+'/videogallery/'];
     var candidates=[];
-    var fetches=urls.map(function(url){return fetchTextAny(url).then(function(text){extractVIs(text).forEach(function(vi){candidates.push({vi:vi,score:scoreVI(text,vi,metaName||''),source:url})})}).catch(function(){})});
+    var fetches=urls.map(function(url,order){return fetchTextAny(url).then(function(text){
+      extractVIs(text).forEach(function(cand){candidates.push({vi:cand.vi,score:scoreVI(text,cand,metaName||''),order:order})});
+    }).catch(function(){})});
     return Promise.all(fetches).then(function(){
-      var sorted=uniq(candidates.sort(function(a,b){return b.score-a.score}),function(x){return x.vi});
-      return sorted.length?sorted[0].vi:'';
+      // Equal scores used to be settled by whichever fetch happened to come back first, so the same
+      // title could answer with a different video on every run.
+      candidates.sort(function(a,b){return(b.score-a.score)||(a.order-b.order)||(a.vi<b.vi?-1:1)});
+      return uniq(candidates,function(x){return x.vi}).map(function(x){return x.vi});
     });
   }
-  function collectMP4(obj,out){
-    out=out||[];
+  function collectMP4(obj,out,tags){
+    out=out||[];tags=tags||'';
     if(!obj||typeof obj!=='object')return out;
-    if(Array.isArray(obj)){obj.forEach(function(x){collectMP4(x,out)});return out}
+    if(Array.isArray(obj)){obj.forEach(function(x){collectMP4(x,out,tags)});return out}
+    var here=tags+' '+String(obj.categories||obj.category||'')+' '+String(obj.title||obj.name||'');
     var u=obj.url||obj.video_url||obj.videoUrl||obj.file||obj.src;
-    if(u&&/\.mp4(\?|$)/i.test(u))out.push({url:u,title:obj.title||obj.name||'MP4'});
-    Object.keys(obj).forEach(function(k){if(typeof obj[k]==='object')collectMP4(obj[k],out)});
+    if(u&&/\.mp4(\?|$)/i.test(u))out.push({url:u,title:obj.title||obj.name||'MP4',tags:here});
+    Object.keys(obj).forEach(function(k){if(obj[k]&&typeof obj[k]==='object')collectMP4(obj[k],out,here)});
     return out;
+  }
+  function kinoRank(v){
+    var s=String(v.tags||v.title||'').toLowerCase();
+    if(/official trailer/.test(s))return 4;
+    if(/trailer/.test(s))return 3;
+    if(/teaser/.test(s))return 2;
+    if(/clip/.test(s))return 1;
+    return 0;
   }
   function getKinoMP4(tt,type){
     var eps=type==='series'?['shows','movies']:['movies','shows'];
@@ -1012,17 +1096,46 @@
       if(i>=eps.length)return Promise.resolve([]);
       return fetchJSON('https://api.kinocheck.com/'+eps[i]+'?imdb_id='+encodeURIComponent(tt)+'&language=en&categories=Trailer,Teaser,Clip').then(function(d){
         var vids=uniq(collectMP4(d),function(v){return v.url});
+        // The response walk returned videos in object-key order, so a clip could end up first and
+        // become the fallback MP4.
+        vids.sort(function(a,b){return kinoRank(b)-kinoRank(a)});
         return vids.length?vids:tryEp(i+1);
       }).catch(function(){return tryEp(i+1)});
     }
     return tryEp(0);
   }
   function enrichVI(vi){
-    var mp4='',title='',tt='';
+    var mp4='',title='',tt='',tts=[];
     var urls=['https://www.imdb.com/video/embed/'+vi+'/','https://www.imdb.com/video/'+vi+'/'];
     var p=Promise.resolve();
-    urls.forEach(function(url){p=p.then(function(){return fetchTextAny(url).then(function(text){mp4=mp4||extractMP4(text);title=title||extractTitle(text);tt=tt||extractTT(text)}).catch(function(){})})});
-    return p.then(function(){return{mp4:mp4,title:title,tt:tt}});
+    urls.forEach(function(url){p=p.then(function(){
+      if(mp4&&tt)return;   // both pages were always fetched, which doubled the load on the proxies
+      return fetchTextAny(url).then(function(text){
+        mp4=mp4||extractMP4(text,vi);
+        title=title||extractTitle(text);
+        tt=tt||extractOwnerTT(text);
+        tts=uniq(tts.concat(extractTTs(text)),function(x){return x});
+      }).catch(function(){});
+    })});
+    return p.then(function(){return{mp4:mp4,title:title,tt:tt,tts:tts}});
+  }
+  // findIMDbVIs can still surface an id that belongs to another title. The video page says which
+  // title it is for, so walk the ranked ids and keep the first one that checks out rather than
+  // trusting the top hit blindly.
+  function pickTrailer(tt,viList,trusted){
+    var list=(viList||[]).slice(0,3);
+    function tryAt(i){
+      if(i>=list.length)return Promise.resolve({vi:'',mp4:''});
+      var vi=list[i];
+      return enrichVI(vi).then(function(extra){
+        var owner=extra.tt||'';
+        var mentionsTT=!extra.tts.length||extra.tts.indexOf(tt)>=0;
+        var wrongTitle=(owner&&owner!==tt)||!mentionsTT;
+        if(trusted||!wrongTitle)return{vi:vi,mp4:extra.mp4||''};
+        return tryAt(i+1);
+      }).catch(function(){return tryAt(i+1)});
+    }
+    return tryAt(0);
   }
 
   function playIMDb(vi){playerBox.innerHTML='<iframe src="https://www.imdb.com/video/embed/'+esc(vi)+'/" allowfullscreen="true"></iframe>'}
@@ -1037,11 +1150,13 @@
   }
 
   function handleTT(tt,forcedVI){
+    var token=searchToken;
     loading('در حال دریافت کاور، مشخصات و بازیگران...');
     outputRows(buildOutputs({tt:tt,vi:forcedVI,castText:''}));
     return Promise.all([getMeta(tt),getIMDbDetails(tt)]).then(function(res){
       var metaPack=res[0],imdbDetails=res[1];
       return mergeDetails(tt,metaPack,imdbDetails).then(function(details){
+        if(token!==searchToken)return;
         if(metaPack||imdbDetails.name)renderMeta(tt,metaPack,details);else{nameBox.textContent=tt;metaBox.textContent='اطلاعات پیدا نشد'}
         renderDetails(details);renderTitleDesc(details);renderIntro(details);renderReadyTexts(details);renderAppCard(details,tt,forcedVI||'','');
         var baseImages=[(metaPack&&metaPack.meta&&metaPack.meta.poster),(metaPack&&metaPack.meta&&metaPack.meta.background)].concat(imdbDetails.images||[]).filter(Boolean);
@@ -1051,17 +1166,19 @@
 
         loading('در حال پیدا کردن تیزر و گالری تصاویر...');
         return Promise.all([
-          forcedVI?Promise.resolve(forcedVI):findIMDbVI(tt,(details&&details.title)||''),
+          forcedVI?Promise.resolve([forcedVI]):findIMDbVIs(tt,(details&&details.title)||''),
           getKinoMP4(tt,(metaPack&&metaPack.type)||'movie'),
           findGalleryImages(tt)
         ]).then(function(res2){
-          var autoVI=res2[0],kinoMP4=res2[1],galleryImages=res2[2];
-          var vi=forcedVI||autoVI||'';
+          if(token!==searchToken)return;
+          var viList=res2[0]||[],kinoMP4=res2[1],galleryImages=res2[2];
           renderGallery(baseImages.concat(galleryImages));
-          var mp4='';
-          var enrichP=vi?enrichVI(vi).then(function(extra){mp4=extra.mp4||(kinoMP4[0]&&kinoMP4[0].url)||'';playIMDb(vi);}):Promise.resolve();
-          if(!vi&&kinoMP4[0]&&kinoMP4[0].url){mp4=kinoMP4[0].url;playMP4(mp4)}
-          return enrichP.then(function(){
+          // A vi the user typed in is taken as given; an auto-picked one has to prove it belongs here.
+          return pickTrailer(tt,viList,!!forcedVI).then(function(picked){
+            if(token!==searchToken)return;
+            var vi=picked.vi||'';
+            var mp4=picked.mp4||(kinoMP4[0]&&kinoMP4[0].url)||'';
+            if(vi)playIMDb(vi);else if(mp4)playMP4(mp4);
             renderVideos({vi:vi,mp4:mp4,kino:kinoMP4.filter(function(v){return v.url!==mp4})});
             renderAppCard(details,tt,vi,mp4);
             outputRows(buildOutputs({tt:tt,vi:vi,mp4:mp4,castText:castText}));
@@ -1075,13 +1192,16 @@
   }
 
   function handleVI(vi){
+    var token=searchToken;
     loading('در حال دریافت ویدئو...');
     playIMDb(vi);
     return enrichVI(vi).then(function(extra){
-      var tt=extra.tt||'';
+      if(token!==searchToken)return;
+      var tt=extra.tt||extra.tts[0]||'';
       var emptyDetails={title:extra.title||vi,titleFa:'',type:'—',director:'پیدا نشد',writer:'پیدا نشد',genre:'پیدا نشد',year:'پیدا نشد',country:'پیدا نشد',language:'پیدا نشد',runtime:'پیدا نشد',description:'پیدا نشد',descriptionFa:'',cast:[]};
       if(!tt){
         return translateToFa(extra.title||vi).then(function(fa){
+          if(token!==searchToken)return;
           emptyDetails.titleFa=fa;
           nameBox.textContent=fa&&fa!==(extra.title||vi)?fa+' / '+(extra.title||vi):(extra.title||vi);
           metaBox.textContent=vi;
@@ -1095,8 +1215,10 @@
       return Promise.all([getMeta(tt),getIMDbDetails(tt)]).then(function(res){
         var metaPack=res[0],imdbDetails=res[1];
         return mergeDetails(tt,metaPack,imdbDetails).then(function(details){
+          if(token!==searchToken)return;
           renderMeta(tt,metaPack,details);
           return findGalleryImages(tt).then(function(galleryImages){
+            if(token!==searchToken)return;
             renderGallery([(metaPack&&metaPack.meta&&metaPack.meta.poster),(metaPack&&metaPack.meta&&metaPack.meta.background)].concat(imdbDetails.images||[]).concat(galleryImages).filter(Boolean));
             renderDetails(details);renderTitleDesc(details);renderIntro(details);renderReadyTexts(details);renderAppCard(details,tt,vi,extra.mp4);
             var castText=lastCast.join('، ');
@@ -1122,6 +1244,7 @@
       if(query.length>=2){searchByName(query);return}
       setStatus('کد tt، کد vi، لینک IMDb یا نام فیلم را وارد کن','bad');return
     }
+    searchToken++;clearTextCache();
     var p=tt?handleTT(tt,vi||''):handleVI(vi);
     p.catch(function(e){console.error(e);setStatus('دریافت اطلاعات کامل نشد. احتمالاً یکی از سرویس‌ها پاسخ نداده است.','bad')});
   }
@@ -1512,7 +1635,7 @@
       toast('در حال دریافت...');
       var pList=[
         'https://api.allorigins.win/raw?url='+encodeURIComponent(url),
-        'https://corsproxy.io/?'+encodeURIComponent(url),
+        'https://corsproxy.io/?url='+encodeURIComponent(url),
         'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(url)
       ];
       function tryP(i){
