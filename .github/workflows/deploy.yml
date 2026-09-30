@@ -40,10 +40,26 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build
         run: npm run build
+
+      - name: Inject runtime fixes
+        run: |
+          test -f dist/index.html
+          test -f dist/runtime-fixes.js
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('dist/index.html')
+          html = p.read_text(encoding='utf-8')
+          tag = '<script src="./runtime-fixes.js"></script>'
+          if tag not in html:
+              if '</body>' not in html:
+                  raise SystemExit('dist/index.html has no </body> tag')
+              html = html.replace('</body>', f'{tag}\n</body>', 1)
+              p.write_text(html, encoding='utf-8')
+          PY
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
