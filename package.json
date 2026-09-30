@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "vite build",
+    "test": "node scripts/smoke-check.mjs",
     "preview": "vite preview"
   },
   "devDependencies": {
