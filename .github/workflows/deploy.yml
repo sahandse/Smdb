@@ -45,20 +45,35 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Inject runtime fixes
+      - name: Inject runtime and enhancement assets
         run: |
           test -f dist/index.html
           test -f dist/runtime-fixes.js
+          test -f dist/smdb-enhancements.js
+          test -f dist/manifest.webmanifest
+          test -f dist/sw.js
+          test -f dist/smdb-icon.svg
           python3 - <<'PY'
           from pathlib import Path
           p = Path('dist/index.html')
           html = p.read_text(encoding='utf-8')
-          tag = '<script src="./runtime-fixes.js"></script>'
-          if tag not in html:
+          head_tag = '<link rel="manifest" href="./manifest.webmanifest">'
+          runtime_tag = '<script src="./runtime-fixes.js"></script>'
+          enhance_tag = '<script src="./smdb-enhancements.js"></script>'
+          if head_tag not in html:
+              if '</head>' not in html:
+                  raise SystemExit('dist/index.html has no </head> tag')
+              html = html.replace('</head>', f'{head_tag}\n</head>', 1)
+          body_tags = []
+          if runtime_tag not in html:
+              body_tags.append(runtime_tag)
+          if enhance_tag not in html:
+              body_tags.append(enhance_tag)
+          if body_tags:
               if '</body>' not in html:
                   raise SystemExit('dist/index.html has no </body> tag')
-              html = html.replace('</body>', f'{tag}\n</body>', 1)
-              p.write_text(html, encoding='utf-8')
+              html = html.replace('</body>', '\n'.join(body_tags) + '\n</body>', 1)
+          p.write_text(html, encoding='utf-8')
           PY
 
       - name: Smoke test generated site
