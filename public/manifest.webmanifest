@@ -1,0 +1,20 @@
+{
+  "name": "SMDB",
+  "short_name": "SMDB",
+  "description": "استخراج و آماده‌سازی اطلاعات فیلم و سریال از IMDb",
+  "lang": "fa",
+  "dir": "rtl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b0d10",
+  "theme_color": "#0b0d10",
+  "icons": [
+    {
+      "src": "./smdb-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
