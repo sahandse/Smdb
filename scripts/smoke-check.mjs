@@ -38,7 +38,7 @@ for (const marker of requiredMarkers) {
 if (!html.includes('</body>') || !html.includes('</html>')) fail('generated HTML is incomplete')
 
 const runtime = readFileSync('dist/runtime-fixes.js', 'utf8')
-if (!runtime.includes('SMDB runtime fixes')) fail('runtime fixes file is not the expected build')
+if (!runtime.includes('Runtime stability fixes for SMDB')) fail('runtime fixes file is not the expected build')
 
 const enhancements = readFileSync('dist/smdb-enhancements.js', 'utf8')
 for (const marker of ['smdbEnhancementTools','smdbBatchBtn','smdbHistory','serviceWorker','WordPress']) {
